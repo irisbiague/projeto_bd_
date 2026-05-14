@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="calendar-header">
+      <div>
+        <h1 class="title-large">Gestão de Menus & Catering</h1>
+        <p class="subtitle">Configure os menus completos e os respetivos ingredientes.</p>
+      </div>
+    </div>
+    <form method="post">
+      <div class="card">
+        <div class="section-title">Identificação Geral</div>
+        <input class="input-field" name="menu_name" type="text" placeholder="Nome do Menu Completo (ex: Menu Corporate Premium)" value="{{ form.menu_name|default('') }}" />
+      </div>
+      <div class="grid-2">
+        {% for cat in categorias_catering %}
+          <div class="card">
+            <div class="section-title">{{ cat.titulo }}</div>
+            <label class="input-label">Descrição / Itens</label>
+            <input class="input-field" name="{{ cat.id }}_nome" type="text" placeholder="{{ cat.placeholderNome }}" value="{{ form[cat.id].nome|default('') }}" />
+            <label class="input-label">Ingredientes</label>
+            <textarea class="input-textarea" name="{{ cat.id }}_ingredientes" placeholder="Ex: Batata, Azeite, Sal, Alho...">{{ form[cat.id].ingredientes|default('') }}</textarea>
+          </div>
+        {% endfor %}
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:20px;padding-bottom:40px;gap:10px;">
+        <button type="submit" class="button-primary">Guardar Menu</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-list">
+    {% if menus %}
+      {% for menu in menus %}
+        <div class="card menu-card">
+          <h3>{{ menu.nome }}</h3>
+          <div class="menu-grid">
+            {% for cat in categorias_catering %}
+              {% if menu[cat.id].nome %}
+                <div class="menu-grid-item">
+                  <div class="menu-grid-item-title">{{ cat.titulo }}</div>
+                  <div>{{ menu[cat.id].nome }}</div>
+                  {% if menu[cat.id].ingredientes %}
+                    <div style="color:#6B7280;font-size:11px;margin-top:4px;">Ingredientes: {{ menu[cat.id].ingredientes }}</div>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">Ainda não existem menus de catering configurados na plataforma.</div>
+    {% endif %}
+  </div>
+{% endblock %}

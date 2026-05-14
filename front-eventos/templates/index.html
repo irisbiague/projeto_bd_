@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="calendar-header">
+      <div>
+        <h1 class="title-large">Planear Novo Evento</h1>
+        <p class="subtitle">Preencha a ficha técnica para agendar a organização.</p>
+      </div>
+    </div>
+    <form method="post" action="{{ url_for('create_event') }}">
+      <div class="section-title">1. Informações do Evento</div>
+      <div class="grid-2">
+        <div>
+          <label class="input-label">Nome do Evento</label>
+          <input class="input-field" name="titulo" type="text" placeholder="Ex: Jantar de Gala" value="{{ form.titulo|default('') }}" />
+        </div>
+        <div>
+          <label class="input-label">Tipo de Evento</label>
+          <select class="input-select" name="tipo">
+            {% for key, tipo in tipos_evento.items() %}
+              <option value="{{ key }}" {% if form.tipo == key %}selected{% endif %}>{{ tipo.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="input-label">Cliente / Empresa</label>
+          <input class="input-field" name="cliente" type="text" placeholder="Nome do cliente" value="{{ form.cliente|default('') }}" />
+        </div>
+        <div>
+          <label class="input-label">Data e Hora do Evento</label>
+          <input class="input-field" name="data" type="datetime-local" value="{{ form.data|default('') }}" />
+        </div>
+        <div>
+          <label class="input-label">Nº de Pessoas (Estimativa)</label>
+          <input class="input-field" name="pessoas" type="number" placeholder="Ex: 150" value="{{ form.pessoas|default('') }}" />
+        </div>
+        <div>
+          <label class="input-label">Morada do Evento</label>
+          <input class="input-field" name="local" type="text" placeholder="Localização exata" value="{{ form.local|default('') }}" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">2. Alimentação & Catering</div>
+        <label class="input-label">Menu Selecionado</label>
+        <select class="input-select" name="menu_id">
+          <option value="">Sem menu atribuído (Selecione um menu...)</option>
+          {% for menu in menus %}
+            <option value="{{ menu.id }}" {% if form.menu_id and form.menu_id == menu.id|string %}selected{% endif %}>{{ menu.nome }}</option>
+          {% endfor %}
+        </select>
+        {% if menus|length == 0 %}
+          <p style="font-size:12px;color:#E74C3C;margin-top:8px;">Não existem menus criados. Vá a "Gestão de Menus" primeiro.</p>
+        {% endif %}
+        {% if selected_menu %}
+          <div class="menu-summary">
+            <div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:10px;">RESUMO DO MENU:</div>
+            <div class="menu-summary-grid">
+              {% for cat in categorias_catering %}
+                {% if selected_menu[cat.id].nome %}
+                  <div>
+                    <strong>{{ cat.titulo }}:</strong> {{ selected_menu[cat.id].nome }}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="section-title">3. Logística e Serviços Extra</div>
+        <div class="service-grid">
+          {% for value, label in servicos_list %}
+            <label class="service-card {% if value in form.servicos %}service-card-selected{% endif %}">
+              <span class="service-toggle">{% if value in form.servicos %}✓{% endif %}</span>
+              <span>{{ label }}</span>
+              <input type="checkbox" name="servicos" value="{{ value }}" {% if value in form.servicos %}checked{% endif %} style="display:none;" />
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:20px;padding-bottom:40px;">
+        <button type="submit" class="button-primary">Confirmar e Agendar Evento</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

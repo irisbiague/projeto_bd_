@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="stock-header">
+      <div>
+        <h1 class="title-large">Gestão de Stock</h1>
+        <p class="subtitle">Registe e atualize os produtos do armazém.</p>
+      </div>
+      <a class="button-primary" href="{{ url_for('stock') }}">Novo Artigo</a>
+    </div>
+
+    <div class="card">
+      <form method="post" action="{{ url_for('stock') }}">
+        {% if editing_item %}
+          <input type="hidden" name="item_id" value="{{ editing_item.id }}" />
+        {% endif %}
+        <input type="hidden" name="action" value="save" />
+        <div class="section-title">{{ 'Editar item de stock' if editing_item else 'Adicionar novo item de stock' }}</div>
+        <div class="grid-2">
+          <div>
+            <label class="input-label">Produto</label>
+            <input class="input-field" name="produto" type="text" placeholder="Ex: Cadeiras" value="{{ stock_form.produto|default('') }}" />
+          </div>
+          <div>
+            <label class="input-label">Quantidade</label>
+            <input class="input-field" name="quantidade" type="number" placeholder="Ex: 120" value="{{ stock_form.quantidade|default('') }}" />
+          </div>
+          <div>
+            <label class="input-label">Localização</label>
+            <input class="input-field" name="localizacao" type="text" placeholder="Ex: Armazém 1" value="{{ stock_form.localizacao|default('') }}" />
+          </div>
+          <div>
+            <label class="input-label">Estado</label>
+            <select class="input-select" name="status">
+              {% for option in ['Em Stock', 'Baixo Stock', 'Fora de Stock'] %}
+                <option value="{{ option }}" {% if stock_form.status == option %}selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="input-label">Notas</label>
+          <textarea class="input-textarea" name="notas" placeholder="Ex: Usar em eventos grandes">{{ stock_form.notas|default('') }}</textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;gap:10px;">
+          {% if editing_item %}
+            <a class="button-secondary" href="{{ url_for('stock') }}">Cancelar</a>
+          {% endif %}
+          <button type="submit" class="button-primary">{{ 'Atualizar Artigo' if editing_item else 'Guardar Artigo' }}</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Inventário Atual</div>
+      {% if stock_items %}
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Quantidade</th>
+              <th>Localização</th>
+              <th>Estado</th>
+              <th>Notas</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in stock_items %}
+              <tr>
+                <td>{{ item.produto }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td>{{ item.localizacao }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.notas }}</td>
+                <td class="stock-actions">
+                  <a class="button-secondary" href="{{ url_for('stock', edit_id=item.id) }}">Editar</a>
+                  <form method="post" action="{{ url_for('delete_stock', item_id=item.id) }}" style="display:inline;">
+                    <button type="submit" class="button-secondary">Remover</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">Ainda não existem itens de stock registados.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

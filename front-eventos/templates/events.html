@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="calendar-header">
+      <div>
+        <h1 class="title-large">Calendário de Eventos</h1>
+        <p class="subtitle">Visão geral dos eventos agendados.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="calendar-header">
+        <div class="buttons">
+          <a class="small-button" href="{{ url_for('events', year=prev_year, month=prev_month) }}">‹</a>
+          <div class="month-title">{{ month_name }} <span style="color:#D4AF37;">{{ year }}</span></div>
+          <a class="small-button" href="{{ url_for('events', year=next_year, month=next_month) }}">›</a>
+        </div>
+      </div>
+      <div class="calendar-grid">
+        {% for dia in dias_da_semana %}
+          <div class="day-header">{{ dia }}</div>
+        {% endfor %}
+
+        {% for _ in empty_cells %}
+          <div class="day-cell-empty"></div>
+        {% endfor %}
+
+        {% for dia in dias_do_mes %}
+          <div class="day-cell">
+            <div class="day-number">{{ dia }}</div>
+            {% for event in events_by_day.get(dia, []) %}
+              {% set tipo = tipos_evento.get(event.tipo, tipos_evento['corporate']) %}
+              <div class="event-badge" style="background:{{ tipo.corFundo }};border-color:{{ tipo.corBorda }};color:{{ tipo.corTexto }};">
+                {{ tipo.emoji }} {{ event.titulo or event.cliente }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="legend">
+      <div style="font-weight:700;color:#6B7280;font-size:12px;text-transform:uppercase;">Legenda:</div>
+      {% for key, tipo in tipos_evento.items() %}
+        <div class="legend-item">
+          <span class="legend-color" style="background:{{ tipo.corFundo }};border-color:{{ tipo.corBorda }};color:{{ tipo.corTexto }};">{{ tipo.emoji }}</span>
+          {{ tipo.label }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}
