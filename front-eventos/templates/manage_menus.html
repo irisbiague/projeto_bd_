@@ -8,6 +8,9 @@
       </div>
     </div>
     <form method="post">
+      {% if editing_menu %}
+        <input type="hidden" name="menu_id" value="{{ editing_menu.id }}" />
+      {% endif %}
       <div class="card">
         <div class="section-title">Identificação Geral</div>
         <input class="input-field" name="menu_name" type="text" placeholder="Nome do Menu Completo (ex: Menu Corporate Premium)" value="{{ form.menu_name|default('') }}" />
@@ -24,7 +27,10 @@
         {% endfor %}
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:20px;padding-bottom:40px;gap:10px;">
-        <button type="submit" class="button-primary">Guardar Menu</button>
+        {% if editing_menu %}
+          <a href="{{ url_for('manage_menus') }}" class="button-secondary">Cancelar</a>
+        {% endif %}
+        <button type="submit" class="button-primary">{{ 'Guardar Alterações' if editing_menu else 'Guardar Menu' }}</button>
       </div>
     </form>
   </div>
@@ -35,9 +41,12 @@
         <div class="card menu-card">
           <div class="menu-card-header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
             <h3>{{ menu.nome }}</h3>
-            <form method="post" action="{{ url_for('delete_menu', menu_id=menu.id) }}" onsubmit="return confirm('Tem a certeza que quer apagar este menu?');">
-              <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar Menu</button>
-            </form>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <a href="{{ url_for('manage_menus', edit_id=menu.id) }}" class="button-secondary" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;">Editar</a>
+              <form method="post" action="{{ url_for('delete_menu', menu_id=menu.id) }}" onsubmit="return confirm('Tem a certeza que quer apagar este menu?');">
+                <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
+              </form>
+            </div>
           </div>
           <div class="menu-grid">
             {% for cat in categorias_catering %}

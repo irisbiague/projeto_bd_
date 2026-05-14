@@ -3,11 +3,14 @@
   <div class="card">
     <div class="calendar-header">
       <div>
-        <h1 class="title-large">Planear Novo Evento</h1>
-        <p class="subtitle">Preencha a ficha técnica para agendar a organização.</p>
+        <h1 class="title-large">{{ 'Editar Evento' if editing_event else 'Planear Novo Evento' }}</h1>
+        <p class="subtitle">{{ 'Altere os detalhes do evento e guarde as alterações.' if editing_event else 'Preencha a ficha técnica para agendar a organização.' }}</p>
       </div>
     </div>
     <form method="post" action="{{ url_for('create_event') }}">
+      {% if editing_event %}
+        <input type="hidden" name="event_id" value="{{ editing_event.id }}" />
+      {% endif %}
       <div class="section-title">1. Informações do Evento</div>
       <div class="grid-2">
         <div>

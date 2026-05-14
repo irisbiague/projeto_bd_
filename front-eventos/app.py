@@ -238,6 +238,13 @@ def get_stock_item(item_id):
     return row_to_stock(row) if row else None
 
 
+def get_event_by_id(event_id):
+    db = get_db()
+    cursor = db.execute('SELECT * FROM events WHERE id = ?', (event_id,))
+    row = fetch_one(cursor)
+    return row_to_event(row) if row else None
+
+
 def previous_month(year, month):
     if month == 1:
         return year - 1, 12
@@ -343,6 +350,7 @@ def logout():
 @app.route('/create-event', methods=['GET', 'POST'])
 def create_event():
     message = None
+    editing_event = None
     form = {
         'titulo': '',
         'tipo': 'corporate',
@@ -365,30 +373,69 @@ def create_event():
             'menu_id': request.form.get('menu_id', '').strip(),
             'servicos': request.form.getlist('servicos')
         }
+        event_id = request.form.get('event_id')
 
         if not form['titulo'] or not form['cliente'] or not form['data'] or not form['local']:
             message = 'Por favor, preencha o nome do evento, cliente, data e local.'
         else:
             db = get_db()
-            db.execute(
-                '''
-                INSERT INTO events (cliente, titulo, tipo, data, pessoas, local, menu_id, servicos, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''',
-                (
-                    form['cliente'],
-                    form['titulo'],
-                    form['tipo'],
-                    form['data'],
-                    int(form['pessoas']) if form['pessoas'].isdigit() else 0,
-                    form['local'],
-                    int(form['menu_id']) if form['menu_id'].isdigit() else None,
-                    json.dumps(form['servicos'], ensure_ascii=False),
-                    datetime.utcnow().isoformat()
+            if event_id and event_id.isdigit():
+                db.execute(
+                    '''
+                    UPDATE events
+                    SET cliente = ?, titulo = ?, tipo = ?, data = ?, pessoas = ?, local = ?, menu_id = ?, servicos = ?
+                    WHERE id = ?
+                    ''',
+                    (
+                        form['cliente'],
+                        form['titulo'],
+                        form['tipo'],
+                        form['data'],
+                        int(form['pessoas']) if form['pessoas'].isdigit() else 0,
+                        form['local'],
+                        int(form['menu_id']) if form['menu_id'].isdigit() else None,
+                        json.dumps(form['servicos'], ensure_ascii=False),
+                        int(event_id)
+                    )
                 )
-            )
-            get_db().commit()
-            return redirect(url_for('create_event', success=1))
+                get_db().commit()
+                return redirect(url_for('create_event', success=1))
+            else:
+                db.execute(
+                    '''
+                    INSERT INTO events (cliente, titulo, tipo, data, pessoas, local, menu_id, servicos, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''',
+                    (
+                        form['cliente'],
+                        form['titulo'],
+                        form['tipo'],
+                        form['data'],
+                        int(form['pessoas']) if form['pessoas'].isdigit() else 0,
+                        form['local'],
+                        int(form['menu_id']) if form['menu_id'].isdigit() else None,
+                        json.dumps(form['servicos'], ensure_ascii=False),
+                        datetime.utcnow().isoformat()
+                    )
+                )
+                get_db().commit()
+                return redirect(url_for('create_event', success=1))
+
+    else:
+        edit_id = request.args.get('edit_id')
+        if edit_id and edit_id.isdigit():
+            editing_event = get_event_by_id(int(edit_id))
+            if editing_event:
+                form = {
+                    'titulo': editing_event['titulo'],
+                    'tipo': editing_event['tipo'],
+                    'cliente': editing_event['cliente'],
+                    'data': editing_event['data'],
+                    'pessoas': str(editing_event['pessoas'] or ''),
+                    'local': editing_event['local'],
+                    'menu_id': str(editing_event['menuId']) if editing_event['menuId'] else '',
+                    'servicos': editing_event['servicos'] or []
+                }
 
     if request.args.get('success'):
         message = 'Evento guardado com sucesso!'
@@ -405,18 +452,21 @@ def create_event():
         selected_menu=selected_menu,
         categorias_catering=categorias_catering,
         servicos_list=servicos_list,
-        tipos_evento=tipos_evento
+        tipos_evento=tipos_evento,
+        editing_event=editing_event
     )
 
 
 @app.route('/manage-menus', methods=['GET', 'POST'])
 def manage_menus():
     message = None
-    form = {'menu_name': ''}
+    editing_menu = None
+    form = {'menu_id': '', 'menu_name': ''}
     for cat in categorias_catering:
         form[cat['id']] = {'nome': '', 'ingredientes': ''}
 
     if request.method == 'POST':
+        form['menu_id'] = request.form.get('menu_id', '').strip()
         form['menu_name'] = request.form.get('menu_name', '').strip()
         for cat in categorias_catering:
             form[cat['id']]['nome'] = request.form.get(f"{cat['id']}_nome", '').strip()
@@ -426,42 +476,94 @@ def manage_menus():
             message = 'Por favor, indique um nome para o menu.'
         else:
             db = get_db()
-            db.execute(
-                '''
-                INSERT INTO menus (
-                    nome,
-                    entradas_nome,
-                    entradas_ingredientes,
-                    pratoPrincipal_nome,
-                    pratoPrincipal_ingredientes,
-                    acompanhamentos_nome,
-                    acompanhamentos_ingredientes,
-                    sobremesa_nome,
-                    sobremesa_ingredientes,
-                    bebidas_nome,
-                    bebidas_ingredientes,
-                    ceia_nome,
-                    ceia_ingredientes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''',
-                (
-                    form['menu_name'],
-                    form['entradas']['nome'],
-                    form['entradas']['ingredientes'],
-                    form['pratoPrincipal']['nome'],
-                    form['pratoPrincipal']['ingredientes'],
-                    form['acompanhamentos']['nome'],
-                    form['acompanhamentos']['ingredientes'],
-                    form['sobremesa']['nome'],
-                    form['sobremesa']['ingredientes'],
-                    form['bebidas']['nome'],
-                    form['bebidas']['ingredientes'],
-                    form['ceia']['nome'],
-                    form['ceia']['ingredientes']
+            if form['menu_id'] and form['menu_id'].isdigit():
+                db.execute(
+                    '''
+                    UPDATE menus SET
+                        nome = ?,
+                        entradas_nome = ?,
+                        entradas_ingredientes = ?,
+                        pratoPrincipal_nome = ?,
+                        pratoPrincipal_ingredientes = ?,
+                        acompanhamentos_nome = ?,
+                        acompanhamentos_ingredientes = ?,
+                        sobremesa_nome = ?,
+                        sobremesa_ingredientes = ?,
+                        bebidas_nome = ?,
+                        bebidas_ingredientes = ?,
+                        ceia_nome = ?,
+                        ceia_ingredientes = ?
+                    WHERE id = ?
+                    ''',
+                    (
+                        form['menu_name'],
+                        form['entradas']['nome'],
+                        form['entradas']['ingredientes'],
+                        form['pratoPrincipal']['nome'],
+                        form['pratoPrincipal']['ingredientes'],
+                        form['acompanhamentos']['nome'],
+                        form['acompanhamentos']['ingredientes'],
+                        form['sobremesa']['nome'],
+                        form['sobremesa']['ingredientes'],
+                        form['bebidas']['nome'],
+                        form['bebidas']['ingredientes'],
+                        form['ceia']['nome'],
+                        form['ceia']['ingredientes'],
+                        int(form['menu_id'])
+                    )
                 )
-            )
+            else:
+                db.execute(
+                    '''
+                    INSERT INTO menus (
+                        nome,
+                        entradas_nome,
+                        entradas_ingredientes,
+                        pratoPrincipal_nome,
+                        pratoPrincipal_ingredientes,
+                        acompanhamentos_nome,
+                        acompanhamentos_ingredientes,
+                        sobremesa_nome,
+                        sobremesa_ingredientes,
+                        bebidas_nome,
+                        bebidas_ingredientes,
+                        ceia_nome,
+                        ceia_ingredientes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''',
+                    (
+                        form['menu_name'],
+                        form['entradas']['nome'],
+                        form['entradas']['ingredientes'],
+                        form['pratoPrincipal']['nome'],
+                        form['pratoPrincipal']['ingredientes'],
+                        form['acompanhamentos']['nome'],
+                        form['acompanhamentos']['ingredientes'],
+                        form['sobremesa']['nome'],
+                        form['sobremesa']['ingredientes'],
+                        form['bebidas']['nome'],
+                        form['bebidas']['ingredientes'],
+                        form['ceia']['nome'],
+                        form['ceia']['ingredientes']
+                    )
+                )
             get_db().commit()
             return redirect(url_for('manage_menus', success=1))
+
+    else:
+        edit_id = request.args.get('edit_id')
+        if edit_id and edit_id.isdigit():
+            editing_menu = get_menu_by_id(int(edit_id))
+            if editing_menu:
+                form = {
+                    'menu_id': str(editing_menu['id']),
+                    'menu_name': editing_menu['nome']
+                }
+                for cat in categorias_catering:
+                    form[cat['id']] = {
+                        'nome': editing_menu[cat['id']]['nome'],
+                        'ingredientes': editing_menu[cat['id']]['ingredientes']
+                    }
 
     if request.args.get('success'):
         message = 'Menu guardado com sucesso!'
@@ -473,7 +575,8 @@ def manage_menus():
         message=message,
         form=form,
         menus=menus,
-        categorias_catering=categorias_catering
+        categorias_catering=categorias_catering,
+        editing_menu=editing_menu
     )
 
 
