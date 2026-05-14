@@ -25,7 +25,7 @@
         {% endfor %}
 
         {% for dia in dias_do_mes %}
-          <div class="day-cell">
+          <a href="{{ url_for('events_by_day', year=year, month=month, day=dia) }}" class="day-cell day-cell-link">
             <div class="day-number">{{ dia }}</div>
             {% for event in events_by_day.get(dia, []) %}
               {% set tipo = tipos_evento.get(event.tipo, tipos_evento['corporate']) %}
@@ -33,7 +33,7 @@
                 {{ tipo.emoji }} {{ event.titulo or event.cliente }}
               </div>
             {% endfor %}
-          </div>
+          </a>
         {% endfor %}
       </div>
     </div>
@@ -45,6 +45,26 @@
           {{ tipo.label }}
         </div>
       {% endfor %}
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="section-title">Eventos deste mês</div>
+      {% if events_of_month %}
+        <div class="event-list">
+          {% for event in events_of_month %}
+            <div class="event-row" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E5E7EB;padding:12px 0;">
+              <div>
+                <div style="font-weight:700;">{{ event.titulo or event.cliente }}</div>
+                <div style="font-size:13px;color:#6B7280;">{{ event.data }} · {{ event.local }} · {{ event.pessoas }} pessoas</div>
+              </div>
+              <form method="post" action="{{ url_for('delete_event', event_id=event.id) }}" onsubmit="return confirm('Tem a certeza que quer apagar este evento?');">
+                <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar Evento</button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">Não existem eventos agendados para este mês.</div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

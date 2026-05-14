@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EventPro | Login de Base de Dados</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-header">
+          <div>
+            <h1>Conexão SQL Server</h1>
+            <p>Insira os dados do servidor e da base de dados para aceder à aplicação.</p>
+          </div>
+          <div class="login-badge">EventPro</div>
+        </div>
+        {% if message %}
+          <div class="alert">{{ message }}</div>
+        {% endif %}
+        <form method="post" class="login-form">
+          <label class="input-label">Driver ODBC</label>
+          <input class="input-field" name="driver" type="text" value="{{ form.driver }}" />
+
+          <label class="input-label">Servidor</label>
+          <input class="input-field" name="server" type="text" value="{{ form.server }}" placeholder="Ex: .\\SQLEXPRESS" />
+
+          <label class="input-label">Base de Dados</label>
+          <input class="input-field" name="database" type="text" value="{{ form.database }}" placeholder="Nome da base de dados" />
+
+          <label class="input-label">Autenticação Windows</label>
+          <select class="input-select" name="trusted_connection">
+            <option value="yes" {% if form.trusted_connection == 'yes' %}selected{% endif %}>Sim</option>
+            <option value="no" {% if form.trusted_connection != 'yes' %}selected{% endif %}>Não</option>
+          </select>
+
+          <label class="input-label">Nome de Utilizador</label>
+          <input class="input-field" name="username" type="text" value="{{ form.username }}" placeholder="Deixe vazio se usar Windows" />
+
+          <label class="input-label">Password</label>
+          <input class="input-field" name="password" type="password" value="{{ form.password }}" placeholder="Deixe vazio se usar Windows" />
+
+          <button type="submit" class="button-primary">Entrar</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

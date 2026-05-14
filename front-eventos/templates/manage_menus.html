@@ -33,7 +33,12 @@
     {% if menus %}
       {% for menu in menus %}
         <div class="card menu-card">
-          <h3>{{ menu.nome }}</h3>
+          <div class="menu-card-header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <h3>{{ menu.nome }}</h3>
+            <form method="post" action="{{ url_for('delete_menu', menu_id=menu.id) }}" onsubmit="return confirm('Tem a certeza que quer apagar este menu?');">
+              <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar Menu</button>
+            </form>
+          </div>
           <div class="menu-grid">
             {% for cat in categorias_catering %}
               {% if menu[cat.id].nome %}

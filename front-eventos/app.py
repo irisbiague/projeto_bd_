@@ -2,7 +2,7 @@
 import json
 import pyodbc
 from datetime import date, datetime
-from flask import Flask, g, redirect, render_template, request, url_for
+from flask import Flask, g, redirect, render_template, request, session, url_for
 
 # Configurações do SQL Server
 SQL_SERVER_CONFIG = {
@@ -13,6 +13,8 @@ SQL_SERVER_CONFIG = {
 }
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+app.secret_key = 'mudar-isto-para-uma-chave-secreta'
+CURRENT_SQL_SERVER_CONFIG = SQL_SERVER_CONFIG.copy()
 
 categorias_catering = [
     {'id': 'entradas', 'titulo': 'Entradas e Aperitivos', 'placeholderNome': 'Ex: Tábua de Queijos...'},
@@ -26,7 +28,12 @@ categorias_catering = [
 servicos_list = [
     ('bar', 'Serviço de Bar Aberto'),
     ('limpeza', 'Equipa de Limpeza'),
-    ('staff', 'Staff de Bengaleiro')
+    ('staff', 'Staff de Bengaleiro'),
+    ('decoracao', 'Decoração e Cenografia'),
+    ('som_luz', 'Som e Iluminação'),
+    ('fotografia', 'Fotografia e Vídeo'),
+    ('seguranca', 'Segurança de Evento'),
+    ('transporte', 'Transporte de Convidados')
 ]
 
 tipos_evento = {
@@ -52,10 +59,14 @@ def build_connection_string(config):
     return f"DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};TrustServerCertificate=yes;"
 
 
+def get_db_config():
+    return CURRENT_SQL_SERVER_CONFIG
+
+
 def get_db():
     db = getattr(g, 'db', None)
     if db is None:
-        connection_string = build_connection_string(SQL_SERVER_CONFIG)
+        connection_string = build_connection_string(get_db_config())
         db = pyodbc.connect(connection_string, autocommit=False)
         g.db = db
     return db
@@ -148,6 +159,10 @@ app.teardown_appcontext(close_db)
 
 @app.before_request
 def ensure_db():
+    if request.endpoint in ('login', 'static', 'logout'):
+        return
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
     init_db()
 
 
@@ -266,7 +281,63 @@ def make_calendar(year, month, events):
 
 @app.route('/')
 def home():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
     return redirect(url_for('create_event'))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    message = None
+    form = {
+        'driver': SQL_SERVER_CONFIG['driver'],
+        'server': SQL_SERVER_CONFIG['server'],
+        'database': SQL_SERVER_CONFIG['database'],
+        'trusted_connection': 'yes',
+        'username': '',
+        'password': ''
+    }
+
+    if request.method == 'POST':
+        form = {
+            'driver': request.form.get('driver', SQL_SERVER_CONFIG['driver']).strip(),
+            'server': request.form.get('server', SQL_SERVER_CONFIG['server']).strip(),
+            'database': request.form.get('database', SQL_SERVER_CONFIG['database']).strip(),
+            'trusted_connection': request.form.get('trusted_connection', 'yes'),
+            'username': request.form.get('username', '').strip(),
+            'password': request.form.get('password', '').strip()
+        }
+
+        if not form['server'] or not form['database']:
+            message = 'Servidor e base de dados são obrigatórios.'
+        else:
+            config = {
+                'driver': form['driver'] or SQL_SERVER_CONFIG['driver'],
+                'server': form['server'],
+                'database': form['database'],
+                'trusted_connection': form['trusted_connection']
+            }
+            if config['trusted_connection'].lower() not in ('yes', 'true', 'sspi'):
+                config['username'] = form['username']
+                config['password'] = form['password']
+
+            try:
+                test_conn = pyodbc.connect(build_connection_string(config), autocommit=False)
+                test_conn.close()
+                global CURRENT_SQL_SERVER_CONFIG
+                CURRENT_SQL_SERVER_CONFIG = config
+                session['logged_in'] = True
+                return redirect(url_for('create_event'))
+            except pyodbc.Error as error:
+                message = f'Não foi possível conectar: {error}'
+
+    return render_template('login.html', message=message, form=form)
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 
 @app.route('/create-event', methods=['GET', 'POST'])
@@ -420,7 +491,19 @@ def events():
     if month > 12:
         year, month = next_month(year, month)
 
-    result = make_calendar(year, month, get_events())
+    all_events = get_events()
+    result = make_calendar(year, month, all_events)
+    events_of_month = []
+    for event in all_events:
+        if not event['data']:
+            continue
+        try:
+            event_date = datetime.fromisoformat(event['data']).date()
+        except ValueError:
+            continue
+        if event_date.year == year and event_date.month == month:
+            events_of_month.append(event)
+
     prev_year, prev_month = previous_month(year, month)
     next_year, next_month_value = next_month(year, month)
 
@@ -432,12 +515,37 @@ def events():
         dias_do_mes=result['dias_do_mes'],
         empty_cells=result['empty_cells'],
         events_by_day=result['events_by_day'],
-        month_name=meses_do_ano[month - 1],
-        year=year,
+        events_of_month=events_of_month,
+        month_name=meses_do_ano[month - 1],        month=month,        year=year,
         prev_year=prev_year,
         prev_month=prev_month,
         next_year=next_year,
         next_month=next_month_value,
+        tipos_evento=tipos_evento
+    )
+
+
+@app.route('/events/day/<int:year>/<int:month>/<int:day>')
+def events_by_day(year, month, day):
+    events = []
+    for event in get_events():
+        if not event['data']:
+            continue
+        try:
+            event_date = datetime.fromisoformat(event['data']).date()
+        except ValueError:
+            continue
+        if event_date.year == year and event_date.month == month and event_date.day == day:
+            events.append(event)
+
+    return render_template(
+        'day_events.html',
+        active_page='events',
+        year=year,
+        month=month,
+        day=day,
+        events=events,
+        month_name=meses_do_ano[month - 1],
         tipos_evento=tipos_evento
     )
 
@@ -533,6 +641,22 @@ def delete_stock(item_id):
     db.execute('DELETE FROM stock_items WHERE id = ?', (item_id,))
     db.commit()
     return redirect(url_for('stock', success=1))
+
+
+@app.route('/menus/delete/<int:menu_id>', methods=['POST'])
+def delete_menu(menu_id):
+    db = get_db()
+    db.execute('DELETE FROM menus WHERE id = ?', (menu_id,))
+    db.commit()
+    return redirect(url_for('manage_menus', success=1))
+
+
+@app.route('/events/delete/<int:event_id>', methods=['POST'])
+def delete_event(event_id):
+    db = get_db()
+    db.execute('DELETE FROM events WHERE id = ?', (event_id,))
+    db.commit()
+    return redirect(url_for('events'))
 
 
 if __name__ == '__main__':

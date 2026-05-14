@@ -72,10 +72,10 @@
         <div class="section-title">3. Logística e Serviços Extra</div>
         <div class="service-grid">
           {% for value, label in servicos_list %}
-            <label class="service-card {% if value in form.servicos %}service-card-selected{% endif %}">
+            <label class="service-card {% if value in form.servicos %}service-card-selected{% endif %}" for="servicos-{{ value }}">
+              <input class="service-checkbox" id="servicos-{{ value }}" type="checkbox" name="servicos" value="{{ value }}" {% if value in form.servicos %}checked{% endif %} />
               <span class="service-toggle">{% if value in form.servicos %}✓{% endif %}</span>
-              <span>{{ label }}</span>
-              <input type="checkbox" name="servicos" value="{{ value }}" {% if value in form.servicos %}checked{% endif %} style="display:none;" />
+              <span class="service-text">{{ label }}</span>
             </label>
           {% endfor %}
         </div>

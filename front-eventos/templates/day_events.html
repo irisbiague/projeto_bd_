@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="calendar-header">
+      <div>
+        <h1 class="title-large">Eventos em {{ day }} de {{ month_name }} de {{ year }}</h1>
+        <p class="subtitle">Lista completa dos eventos marcados para este dia.</p>
+      </div>
+      <div>
+        <a href="{{ url_for('events', year=year, month=month) }}" class="button-secondary">Voltar ao calendário</a>
+      </div>
+    </div>
+
+    {% if events %}
+      <div class="event-list">
+        {% for event in events %}
+          {% set tipo = tipos_evento.get(event.tipo, tipos_evento['corporate']) %}
+          <div class="event-row" style="border-bottom:1px solid #E5E7EB;padding:16px 0;">
+            <div>
+              <div style="font-weight:700;font-size:1rem;color:#111827;">{{ event.titulo or event.cliente }}</div>
+              <div style="font-size:13px;color:#6B7280;margin-top:6px;">{{ event.data }} · {{ event.local }} · {{ event.pessoas }} pessoas</div>
+              <div style="margin-top:8px;color:#374151;">Serviços: {{ event.servicos | join(', ') if event.servicos else 'Nenhum serviço extra' }}</div>
+            </div>
+            <span class="event-badge" style="background:{{ tipo.corFundo }};border-color:{{ tipo.corBorda }};color:{{ tipo.corTexto }};">{{ tipo.emoji }} {{ tipo.label }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">Não há eventos marcados para este dia.</div>
+    {% endif %}
+  </div>
+{% endblock %}

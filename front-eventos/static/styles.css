@@ -186,6 +186,57 @@ textarea {
   resize: vertical;
 }
 
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 45%, #ffffff 100%);
+}
+
+.login-card {
+  width: min(540px, 100%);
+  padding: 40px;
+  border-radius: 34px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 34px 90px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+}
+
+.login-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.login-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.login-header p {
+  color: #6B7280;
+  margin: 8px 0 0;
+}
+
+.login-badge {
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: #fde68a;
+  color: #92400e;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.login-form {
+  display: grid;
+  gap: 16px;
+}
+
 .button-primary,
 .button-secondary {
   border: none;
@@ -228,18 +279,36 @@ textarea {
 .service-card {
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 22px;
-  display: flex;
+  padding: 18px 20px;
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 14px;
   cursor: pointer;
   transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
   background: var(--surface-strong);
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background-color 0.2s;
+  z-index: 0;
 }
 
 .service-card:hover {
   border-color: var(--primary-soft);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+}
+
+.service-card-selected::before,
+.service-card:has(input:checked)::before {
+  background: rgba(253, 230, 138, 0.18);
 }
 
 .service-card-selected {
@@ -248,21 +317,47 @@ textarea {
 }
 
 .service-toggle {
-  width: 26px;
-  height: 26px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   display: grid;
   place-items: center;
   background: transparent;
   color: var(--text);
   font-size: 14px;
+  font-weight: 700;
 }
 
-.service-card-selected .service-toggle {
+.service-card-selected .service-toggle,
+.service-card:has(input:checked) .service-toggle {
   border-color: var(--primary-soft);
   background: var(--primary-soft);
   color: #FFFFFF;
+}
+
+.service-checkbox {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.service-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.service-text {
+  flex: 1;
+  line-height: 1.4;
+  color: #111827;
+  text-align: left;
 }
 
 .menu-summary {
@@ -381,17 +476,25 @@ textarea {
   padding-bottom: 10px;
 }
 
-.day-cell {
+.day-cell,
+.day-cell-link {
   background: var(--surface-strong);
   border: 1px solid var(--border);
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  color: inherit;
+  text-decoration: none;
 }
 
-.day-cell:hover {
+.day-cell:hover,
+.day-cell-link:hover {
   border-color: var(--primary-soft);
+}
+
+.day-cell-link {
+  cursor: pointer;
 }
 
 .day-number {
