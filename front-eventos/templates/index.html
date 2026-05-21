@@ -14,20 +14,27 @@
       <div class="section-title">1. Informações do Evento</div>
       <div class="grid-2">
         <div>
-          <label class="input-label">Nome do Evento</label>
-          <input class="input-field" name="titulo" type="text" placeholder="Ex: Jantar de Gala" value="{{ form.titulo|default('') }}" />
+          <label class="input-label">Cliente / Empresa (Nome)</label>
+          <input class="input-field" name="cliente" type="text" placeholder="Nome do cliente" value="{{ form.cliente|default('') }}" />
+        </div>
+        <div>
+          <label class="input-label">NIF do Cliente</label>
+          <input class="input-field" name="cliente_nif" type="text" placeholder="Ex: 123456789" value="{{ form.cliente_nif|default('') }}" />
+        </div>
+        <div>
+          <label class="input-label">Tipo de Cliente</label>
+          <select class="input-select" name="cliente_tipo">
+            <option value="Particular" {% if form.cliente_tipo == 'Particular' %}selected{% endif %}>Particular</option>
+            <option value="Empresa" {% if form.cliente_tipo == 'Empresa' %}selected{% endif %}>Empresa</option>
+          </select>
         </div>
         <div>
           <label class="input-label">Tipo de Evento</label>
           <select class="input-select" name="tipo">
             {% for key, tipo in tipos_evento.items() %}
-              <option value="{{ key }}" {% if form.tipo == key %}selected{% endif %}>{{ tipo.label }}</option>
+              <option value="{{ tipo.label }}" {% if form.tipo == tipo.label %}selected{% endif %}>{{ tipo.label }}</option>
             {% endfor %}
           </select>
-        </div>
-        <div>
-          <label class="input-label">Cliente / Empresa</label>
-          <input class="input-field" name="cliente" type="text" placeholder="Nome do cliente" value="{{ form.cliente|default('') }}" />
         </div>
         <div>
           <label class="input-label">Data e Hora do Evento</label>

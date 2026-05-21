@@ -28,9 +28,9 @@
           <a href="{{ url_for('events_by_day', year=year, month=month, day=dia) }}" class="day-cell day-cell-link">
             <div class="day-number">{{ dia }}</div>
             {% for event in events_by_day.get(dia, []) %}
-              {% set tipo = tipos_evento.get(event.tipo, tipos_evento['corporate']) %}
+              {% set tipo = tipos_evento.get(event.tipo, {'emoji': '📅', 'corFundo': '#F3F4F6', 'corBorda': '#D1D5DB', 'corTexto': '#374151'}) %}
               <div class="event-badge" style="background:{{ tipo.corFundo }};border-color:{{ tipo.corBorda }};color:{{ tipo.corTexto }};">
-                {{ tipo.emoji }} {{ event.titulo or event.cliente }}
+                {{ tipo.emoji }} {{ event.cliente }}
               </div>
             {% endfor %}
           </a>
@@ -53,7 +53,7 @@
           {% for event in events_of_month %}
             <div class="event-row" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E5E7EB;padding:12px 0;">
               <div>
-                <div style="font-weight:700;">{{ event.titulo or event.cliente }}</div>
+                <div style="font-weight:700;">Evento: {{ event.cliente }}</div>
                 <div style="font-size:13px;color:#6B7280;">{{ event.data }} · {{ event.local }} · {{ event.pessoas }} pessoas</div>
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
