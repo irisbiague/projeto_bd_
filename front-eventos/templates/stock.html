@@ -57,7 +57,10 @@
     </div>
 
     <div class="card">
-      <div class="section-title">Inventário Atual</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div class="section-title" style="margin-bottom:0;">Inventário Atual</div>
+        <input type="text" id="searchStock" onkeyup="filterStock()" placeholder="Pesquisar ingrediente..." class="input-field" style="max-width: 300px; margin-bottom:0;">
+      </div>
       {% if stock_items %}
         <table class="stock-table">
           <thead>
@@ -95,4 +98,25 @@
       {% endif %}
     </div>
   </div>
+
+  <script>
+    function filterStock() {
+      var input = document.getElementById("searchStock");
+      var filter = input.value.toLowerCase();
+      var table = document.querySelector(".stock-table");
+      if (!table) return;
+      var tr = table.getElementsByTagName("tr");
+      for (var i = 1; i < tr.length; i++) {
+        var td = tr[i].getElementsByTagName("td")[1];
+        if (td) {
+          var txtValue = td.textContent || td.innerText;
+          if (txtValue.toLowerCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+          } else {
+            tr[i].style.display = "none";
+          }
+        }       
+      }
+    }
+  </script>
 {% endblock %}

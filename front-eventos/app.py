@@ -4,89 +4,21 @@ import pyodbc
 from datetime import date, datetime
 from flask import Flask, g, redirect, render_template, request, session, url_for
 
-# Configurações do SQL Server
-SQL_SERVER_CONFIG = {
-    'driver': '{ODBC Driver 18 for SQL Server}',
-    'server': '.\\SQLEXPRESS',
-    'database': 'Projeto',
-    'trusted_connection': 'yes',
-}
+from db.database import SQL_SERVER_CONFIG, set_db_config, get_db, close_db, build_connection_string, init_db
+from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servicos, save_evento, delete_evento as db_delete_evento
+from db.menus import (
+    get_menus, get_menu_by_id, save_menu, delete_menu as db_delete_menu, categorias_catering,
+    get_todos_pratos, get_todas_bebidas, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida
+)
+from db.stock import get_stock_items, get_stock_item, save_stock_item, delete_stock_item
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = 'mudar-isto-para-uma-chave-secreta'
-CURRENT_SQL_SERVER_CONFIG = SQL_SERVER_CONFIG.copy()
 
-categorias_catering = [
-    {'id': 'entradas', 'titulo': 'Entradas e Aperitivos', 'placeholderNome': 'Ex: Tábua de Queijos...'},
-    {'id': 'pratoPrincipal', 'titulo': 'Prato Principal', 'placeholderNome': 'Ex: Lombo Assado...'},
-    {'id': 'acompanhamentos', 'titulo': 'Acompanhamentos', 'placeholderNome': 'Ex: Arroz Árabe...'},
-    {'id': 'sobremesa', 'titulo': 'Sobremesa', 'placeholderNome': 'Ex: Buffet de Doces...'},
-    {'id': 'bebidas', 'titulo': 'Serviço de Bebidas', 'placeholderNome': 'Ex: Vinhos do Douro...'},
-    {'id': 'ceia', 'titulo': 'Ceia / Snacks Extra', 'placeholderNome': 'Ex: Caldo Verde...'}
-]
-
-categorias_catering = [
-    {'id': 'entradas', 'titulo': 'Entradas e Aperitivos', 'placeholderNome': 'Ex: Tábua de Queijos...'},
-    {'id': 'pratoPrincipal', 'titulo': 'Prato Principal', 'placeholderNome': 'Ex: Lombo Assado...'},
-    {'id': 'acompanhamentos', 'titulo': 'Acompanhamentos', 'placeholderNome': 'Ex: Arroz Árabe...'},
-    {'id': 'sobremesa', 'titulo': 'Sobremesa', 'placeholderNome': 'Ex: Buffet de Doces...'},
-    {'id': 'bebidas', 'titulo': 'Serviço de Bebidas', 'placeholderNome': 'Ex: Vinhos do Douro...'},
-    {'id': 'ceia', 'titulo': 'Ceia / Snacks Extra', 'placeholderNome': 'Ex: Caldo Verde...'}
-]
+app.teardown_appcontext(close_db)
 
 dias_da_semana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 meses_do_ano = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-
-
-def build_connection_string(config):
-    driver = config['driver']
-    server = config['server']
-    database = config['database']
-    if config.get('trusted_connection', 'no').lower() in ('yes', 'true', 'sspi'):
-        return f"DRIVER={driver};SERVER={server};DATABASE={database};Trusted_Connection=yes;TrustServerCertificate=yes;"
-
-    username = config['username']
-    password = config['password']
-    return f"DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};TrustServerCertificate=yes;"
-
-
-def get_db_config():
-    return CURRENT_SQL_SERVER_CONFIG
-
-
-def get_db():
-    db = getattr(g, 'db', None)
-    if db is None:
-        connection_string = build_connection_string(get_db_config())
-        db = pyodbc.connect(connection_string, autocommit=False)
-        g.db = db
-    return db
-
-
-def close_db(exception=None):
-    db = getattr(g, 'db', None)
-    if db is not None:
-        db.close()
-
-
-def fetch_all(cursor):
-    columns = [col[0] for col in cursor.description]
-    return [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-
-def fetch_one(cursor):
-    row = cursor.fetchone()
-    if row is None:
-        return None
-    columns = [col[0] for col in cursor.description]
-    return dict(zip(columns, row))
-
-
-def init_db():
-    pass
-
-
-app.teardown_appcontext(close_db)
 
 
 @app.before_request
@@ -97,239 +29,6 @@ def ensure_db():
         return redirect(url_for('login'))
     init_db()
 
-
-def get_or_create_tipo_prato(db, designacao):
-    cursor = db.execute('SELECT id_tipo_prato FROM Tipo_Prato WHERE designacao = ?', (designacao,))
-    row = fetch_one(cursor)
-    if row:
-        return row['id_tipo_prato']
-    db.execute('INSERT INTO Tipo_Prato (designacao) VALUES (?)', (designacao,))
-    db.commit() # commit if autocommit is false
-    cursor = db.execute('SELECT id_tipo_prato FROM Tipo_Prato WHERE designacao = ?', (designacao,))
-    return fetch_one(cursor)['id_tipo_prato']
-
-def get_menu_details(menu_row, db):
-    cursor = db.execute('''
-        SELECT P.nome, P.receita, TP.designacao as cat
-        FROM Constituicao_Menu_Pratos CMP
-        JOIN Prato P ON CMP.id_prato = P.id_prato
-        LEFT JOIN Tipo_Prato TP ON P.id_tipo_prato = TP.id_tipo_prato
-        WHERE CMP.id_menu = ? AND CMP.isdeleted = 0 AND P.isdeleted = 0
-    ''', (menu_row['id_menu'],))
-    pratos = fetch_all(cursor)
-    
-    cursor = db.execute('''
-        SELECT B.nome, B.receita
-        FROM Constituicao_Menu_Bebidas CMB
-        JOIN Bebida B ON CMB.id_bebida = B.id_bebida
-        WHERE CMB.id_menu = ? AND CMB.isdeleted = 0 AND B.isdeleted = 0
-    ''', (menu_row['id_menu'],))
-    bebidas = fetch_all(cursor)
-
-    res = {
-        'id': menu_row['id_menu'],
-        'nome': menu_row['descricao'],
-        'entradas': {'nome': '', 'ingredientes': ''},
-        'pratoPrincipal': {'nome': '', 'ingredientes': ''},
-        'acompanhamentos': {'nome': '', 'ingredientes': ''},
-        'sobremesa': {'nome': '', 'ingredientes': ''},
-        'bebidas': {'nome': '', 'ingredientes': ''},
-        'ceia': {'nome': '', 'ingredientes': ''}
-    }
-    
-    for p in pratos:
-        cat = p['cat']
-        if cat in res:
-            res[cat] = {'nome': p['nome'] or '', 'ingredientes': p['receita'] or ''}
-            
-    for b in bebidas:
-        res['bebidas'] = {'nome': b['nome'] or '', 'ingredientes': b['receita'] or ''}
-        
-    return res
-
-
-def get_events():
-    db = get_db()
-    cursor = db.execute('''
-        SELECT E.*, C.nome as cliente_nome, TE.descricao as tipo_evento
-        FROM Evento E
-        JOIN Cliente C ON E.id_cliente = C.id_cliente
-        JOIN Tipo_evento TE ON E.id_tipo_evento = TE.id_tipo_evento
-        WHERE E.isdeleted = 0
-        ORDER BY E.id_evento DESC
-    ''')
-    events = fetch_all(cursor)
-    res = []
-    for e in events:
-        s_cursor = db.execute('''
-            SELECT S.descricao 
-            FROM Servico_Evento SE
-            JOIN Servico S ON SE.id_servico = S.id_servico
-            WHERE SE.id_evento = ? AND SE.isdeleted = 0 AND S.isdeleted = 0
-        ''', (e['id_evento'],))
-        servs = [row['descricao'] for row in fetch_all(s_cursor)]
-        res.append({
-            'id': e['id_evento'],
-            'cliente': e['cliente_nome'],
-            'tipo': e['tipo_evento'],
-            'data': e['data_evento'].isoformat() if isinstance(e['data_evento'], datetime) else str(e['data_evento']),
-            'pessoas': e['nr_pessoas'],
-            'local': e['morada'],
-            'menuId': e['id_menu'],
-            'servicos': servs
-        })
-    return res
-
-
-def row_to_stock(row):
-    return {
-        'id': row['id_ingrediente'],
-        'nome': row['nome'],
-        'quantidade': row['quantidade'],
-        'unidade': row['unidade'],
-        'custo': row['custo'],
-        'data_validade': row['data_validade']
-    }
-
-
-def get_menus():
-    db = get_db()
-    cursor = db.execute('SELECT * FROM Menu WHERE isdeleted = 0 ORDER BY id_menu DESC')
-    return [get_menu_details(row, db) for row in fetch_all(cursor)]
-
-
-def get_menu_by_id(menu_id):
-    db = get_db()
-    cursor = db.execute('SELECT * FROM Menu WHERE id_menu = ? AND isdeleted = 0', (menu_id,))
-    row = fetch_one(cursor)
-    return get_menu_details(row, db) if row else None
-
-
-def get_event_by_id(event_id):
-    db = get_db()
-    cursor = db.execute('''
-        SELECT E.*, C.nome as cliente_nome, C.NIF as cliente_nif, C.tipo_cliente as cliente_tipo, TE.descricao as tipo_evento
-        FROM Evento E
-        JOIN Cliente C ON E.id_cliente = C.id_cliente
-        JOIN Tipo_evento TE ON E.id_tipo_evento = TE.id_tipo_evento
-        WHERE E.id_evento = ? AND E.isdeleted = 0
-    ''', (event_id,))
-    e = fetch_one(cursor)
-    if not e:
-        return None
-    s_cursor = db.execute('''
-        SELECT S.descricao 
-        FROM Servico_Evento SE
-        JOIN Servico S ON SE.id_servico = S.id_servico
-        WHERE SE.id_evento = ? AND SE.isdeleted = 0 AND S.isdeleted = 0
-    ''', (event_id,))
-    servs = [row['descricao'] for row in fetch_all(s_cursor)]
-    return {
-        'id': e['id_evento'],
-        'cliente': e['cliente_nome'],
-        'cliente_nif': e['cliente_nif'],
-        'cliente_tipo': e['cliente_tipo'],
-        'tipo': e['tipo_evento'],
-        'data': e['data_evento'].isoformat() if isinstance(e['data_evento'], datetime) else str(e['data_evento']),
-        'pessoas': e['nr_pessoas'],
-        'local': e['morada'],
-        'menuId': e['id_menu'],
-        'servicos': servs
-    }
-
-
-def get_stock_items():
-    db = get_db()
-    cursor = db.execute('SELECT * FROM Ingrediente WHERE isdeleted = 0 ORDER BY id_ingrediente DESC')
-    return [row_to_stock(row) for row in fetch_all(cursor)]
-
-
-def get_stock_item(item_id):
-    db = get_db()
-    cursor = db.execute('SELECT * FROM Ingrediente WHERE id_ingrediente = ? AND isdeleted = 0', (item_id,))
-    row = fetch_one(cursor)
-    return row_to_stock(row) if row else None
-
-
-def get_tipos_evento():
-    db = get_db()
-    cursor = db.execute('SELECT descricao FROM Tipo_evento WHERE isdeleted = 0')
-    tipos_db = fetch_all(cursor)
-    
-    configs = {
-        'casamento': {'emoji': '💍', 'corFundo': '#FDF2F8', 'corBorda': '#FBCFE8', 'corTexto': '#9D174D'},
-        'batizado': {'emoji': '🕊️', 'corFundo': '#F0FDF4', 'corBorda': '#BBF7D0', 'corTexto': '#166534'},
-        'evento empresarial': {'emoji': '💼', 'corFundo': '#EFF6FF', 'corBorda': '#BFDBFE', 'corTexto': '#1E3A8A'},
-        'aniversário': {'emoji': '🎂', 'corFundo': '#FFFBEB', 'corBorda': '#FEF08A', 'corTexto': '#854D0E'},
-        'conferência': {'emoji': '🎤', 'corFundo': '#F3E8FF', 'corBorda': '#D8B4FE', 'corTexto': '#6B21A8'},
-        'jantar de gala': {'emoji': '🥂', 'corFundo': '#FEF2F2', 'corBorda': '#FECACA', 'corTexto': '#991B1B'},
-        'workshop': {'emoji': '🛠️', 'corFundo': '#ECFEFF', 'corBorda': '#A5F3FC', 'corTexto': '#155E75'}
-    }
-    
-    res = {}
-    for t in tipos_db:
-        desc = t['descricao']
-        desc_lower = desc.lower().replace('á', 'a').replace('â', 'a').replace('é', 'e').replace('ê', 'e')
-        # Simple fuzzy match for "empresarial", "aniversário"
-        matched = False
-        for k, v in configs.items():
-            if k.replace('á', 'a') in desc_lower:
-                res[desc] = v.copy()
-                res[desc]['label'] = desc
-                matched = True
-                break
-        
-        if not matched:
-            res[desc] = {
-                'label': desc, 
-                'emoji': '📅', 
-                'corFundo': '#F3F4F6', 
-                'corBorda': '#D1D5DB', 
-                'corTexto': '#374151'
-            }
-    
-    # If db is empty, return a default so it doesn't break
-    if not res:
-        res['Corporate / Empresa'] = {'label': 'Corporate / Empresa', 'emoji': '💼', 'corFundo': '#EFF6FF', 'corBorda': '#BFDBFE', 'corTexto': '#1E3A8A'}
-    return res
-
-def get_servicos():
-    db = get_db()
-    cursor = db.execute('SELECT descricao FROM Servico WHERE isdeleted = 0')
-    servs = fetch_all(cursor)
-    return [(row['descricao'], row['descricao']) for row in servs]
-
-# get_event_by_id replaced above
-
-
-def get_or_create_cliente(db, nome, nif, tipo):
-    cursor = db.execute('SELECT id_cliente FROM Cliente WHERE NIF = ?', (nif,))
-    row = fetch_one(cursor)
-    if row:
-        db.execute('UPDATE Cliente SET nome = ?, tipo_cliente = ? WHERE NIF = ?', (nome, tipo, nif))
-        db.commit()
-        return row['id_cliente']
-    db.execute('INSERT INTO Cliente (nome, NIF, tipo_cliente) VALUES (?, ?, ?)', (nome, nif, tipo))
-    db.commit()
-    return fetch_one(db.execute('SELECT @@IDENTITY AS id'))['id']
-
-def get_or_create_tipo_evento(db, descricao):
-    cursor = db.execute('SELECT id_tipo_evento FROM Tipo_evento WHERE descricao = ?', (descricao,))
-    row = fetch_one(cursor)
-    if row:
-        return row['id_tipo_evento']
-    db.execute('INSERT INTO Tipo_evento (descricao) VALUES (?)', (descricao,))
-    db.commit()
-    return fetch_one(db.execute('SELECT @@IDENTITY AS id'))['id']
-
-def get_or_create_servico(db, descricao):
-    cursor = db.execute('SELECT id_servico FROM Servico WHERE descricao = ?', (descricao,))
-    row = fetch_one(cursor)
-    if row:
-        return row['id_servico']
-    db.execute('INSERT INTO Servico (descricao, custo) VALUES (?, 0)', (descricao,))
-    db.commit()
-    return fetch_one(db.execute('SELECT @@IDENTITY AS id'))['id']
 
 def previous_month(year, month):
     if month == 1:
@@ -417,8 +116,7 @@ def login():
             try:
                 test_conn = pyodbc.connect(build_connection_string(config), autocommit=False)
                 test_conn.close()
-                global CURRENT_SQL_SERVER_CONFIG
-                CURRENT_SQL_SERVER_CONFIG = config
+                set_db_config(config)
                 session['logged_in'] = True
                 return redirect(url_for('create_event'))
             except pyodbc.Error as error:
@@ -467,59 +165,7 @@ def create_event():
             message = 'Por favor, preencha o cliente, NIF, data, local e escolha um menu.'
         else:
             db = get_db()
-            id_cliente = get_or_create_cliente(db, form['cliente'], form['cliente_nif'], form['cliente_tipo'])
-            id_tipo_evento = get_or_create_tipo_evento(db, form['tipo'])
-            nr_pessoas = int(form['pessoas']) if form['pessoas'].isdigit() else 1
-            data_sql = form['data'].replace('T', ' ')
-            if len(data_sql) == 16:
-                data_sql += ':00'
-            
-            if event_id and event_id.isdigit():
-                db.execute(
-                    '''
-                    UPDATE Evento
-                    SET id_cliente = ?, id_menu = ?, id_tipo_evento = ?, morada = ?, data_evento = ?, nr_pessoas = ?
-                    WHERE id_evento = ?
-                    ''',
-                    (
-                        id_cliente,
-                        int(form['menu_id']),
-                        id_tipo_evento,
-                        form['local'],
-                        data_sql,
-                        nr_pessoas,
-                        int(event_id)
-                    )
-                )
-                db.execute('UPDATE Servico_Evento SET isdeleted = 1 WHERE id_evento = ?', (int(event_id),))
-                db.commit()
-                e_id = int(event_id)
-            else:
-                db.execute(
-                    '''
-                    INSERT INTO Evento (id_cliente, id_menu, id_tipo_evento, morada, data_evento, nr_pessoas, duracao, custo, margem)
-                    VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0)
-                    ''',
-                    (
-                        id_cliente,
-                        int(form['menu_id']),
-                        id_tipo_evento,
-                        form['local'],
-                        data_sql,
-                        nr_pessoas
-                    )
-                )
-                db.commit()
-                e_id = fetch_one(db.execute('SELECT @@IDENTITY AS id'))['id']
-
-            for serv in form['servicos']:
-                id_serv = get_or_create_servico(db, serv)
-                cursor = db.execute('SELECT * FROM Servico_Evento WHERE id_evento = ? AND id_servico = ?', (e_id, id_serv))
-                if fetch_one(cursor):
-                    db.execute('UPDATE Servico_Evento SET isdeleted = 0 WHERE id_evento = ? AND id_servico = ?', (e_id, id_serv))
-                else:
-                    db.execute('INSERT INTO Servico_Evento (id_evento, id_servico) VALUES (?, ?)', (e_id, id_serv))
-            db.commit()
+            save_evento(db, form, event_id)
             return redirect(url_for('create_event', success=1))
 
     else:
@@ -565,48 +211,19 @@ def manage_menus():
     editing_menu = None
     form = {'menu_id': '', 'menu_name': ''}
     for cat in categorias_catering:
-        form[cat['id']] = {'nome': '', 'ingredientes': ''}
+        form[cat['id']] = {'id': ''}
 
     if request.method == 'POST':
         form['menu_id'] = request.form.get('menu_id', '').strip()
         form['menu_name'] = request.form.get('menu_name', '').strip()
         for cat in categorias_catering:
-            form[cat['id']]['nome'] = request.form.get(f"{cat['id']}_nome", '').strip()
-            form[cat['id']]['ingredientes'] = request.form.get(f"{cat['id']}_ingredientes", '').strip()
+            form[cat['id']]['id'] = request.form.get(f"{cat['id']}_id", '').strip()
 
         if not form['menu_name']:
             message = 'Por favor, indique um nome para o menu.'
         else:
             db = get_db()
-            if form['menu_id'] and form['menu_id'].isdigit():
-                menu_id = int(form['menu_id'])
-                db.execute('UPDATE Menu SET descricao = ? WHERE id_menu = ?', (form['menu_name'], menu_id))
-                db.execute('UPDATE Constituicao_Menu_Pratos SET isdeleted = 1 WHERE id_menu = ?', (menu_id,))
-                db.execute('UPDATE Constituicao_Menu_Bebidas SET isdeleted = 1 WHERE id_menu = ?', (menu_id,))
-            else:
-                db.execute('INSERT INTO Menu (descricao) VALUES (?)', (form['menu_name'],))
-                db.commit()
-                cursor = db.execute('SELECT @@IDENTITY AS id')
-                menu_id = fetch_one(cursor)['id']
-            
-            for cat in categorias_catering:
-                cat_id = cat['id']
-                p_nome = form[cat_id]['nome']
-                p_ing = form[cat_id]['ingredientes']
-                if p_nome:
-                    if cat_id == 'bebidas':
-                        db.execute('INSERT INTO Bebida (nome, receita) VALUES (?, ?)', (p_nome, p_ing))
-                        db.commit()
-                        b_id = fetch_one(db.execute('SELECT @@IDENTITY AS id'))['id']
-                        db.execute('INSERT INTO Constituicao_Menu_Bebidas (id_menu, id_bebida) VALUES (?, ?)', (menu_id, b_id))
-                    else:
-                        tp_id = get_or_create_tipo_prato(db, cat_id)
-                        db.execute('INSERT INTO Prato (id_tipo_prato, nome, receita) VALUES (?, ?, ?)', (tp_id, p_nome, p_ing))
-                        db.commit()
-                        p_id = fetch_one(db.execute('SELECT @@IDENTITY AS id'))['id']
-                        db.execute('INSERT INTO Constituicao_Menu_Pratos (id_menu, id_prato) VALUES (?, ?)', (menu_id, p_id))
-                        
-            get_db().commit()
+            save_menu(db, form)
             return redirect(url_for('manage_menus', success=1))
 
     else:
@@ -620,14 +237,21 @@ def manage_menus():
                 }
                 for cat in categorias_catering:
                     form[cat['id']] = {
-                        'nome': editing_menu[cat['id']]['nome'],
-                        'ingredientes': editing_menu[cat['id']]['ingredientes']
+                        'id': str(editing_menu[cat['id']].get('id', ''))
                     }
 
     if request.args.get('success'):
         message = 'Menu guardado com sucesso!'
 
     menus = get_menus()
+    pratos = get_todos_pratos()
+    bebidas = get_todas_bebidas()
+
+    pratos_por_categoria = {}
+    for p in pratos:
+        cat = p['categoria']
+        pratos_por_categoria.setdefault(cat, []).append(p)
+
     return render_template(
         'manage_menus.html',
         active_page='manage_menus',
@@ -635,7 +259,52 @@ def manage_menus():
         form=form,
         menus=menus,
         categorias_catering=categorias_catering,
-        editing_menu=editing_menu
+        editing_menu=editing_menu,
+        pratos_por_categoria=pratos_por_categoria,
+        bebidas=bebidas
+    )
+
+@app.route('/manage-dishes', methods=['GET', 'POST'])
+def manage_dishes():
+    message = None
+    form = {'id': '', 'tipo': 'prato', 'categoria': 'entradas', 'nome': '', 'receita': ''}
+
+    if request.method == 'POST':
+        form['id'] = request.form.get('id', '').strip()
+        form['tipo'] = request.form.get('tipo', 'prato').strip()
+        form['categoria'] = request.form.get('categoria', 'entradas').strip()
+        form['nome'] = request.form.get('nome', '').strip()
+        form['receita'] = request.form.get('receita', '').strip()
+
+        if not form['nome']:
+            message = 'Por favor, indique um nome para o prato ou bebida.'
+        else:
+            db = get_db()
+            if form['tipo'] == 'bebida':
+                save_bebida(db, form['id'], form['nome'], form['receita'])
+            else:
+                save_prato(db, form['id'], form['nome'], form['receita'], form['categoria'])
+            return redirect(url_for('manage_dishes', success=1))
+
+    if request.args.get('success'):
+        message = 'Artigo de catering guardado com sucesso!'
+
+    pratos = get_todos_pratos()
+    bebidas = get_todas_bebidas()
+
+    pratos_por_categoria = {}
+    for p in pratos:
+        cat = p['categoria']
+        pratos_por_categoria.setdefault(cat, []).append(p)
+
+    return render_template(
+        'manage_dishes.html',
+        active_page='manage_dishes',
+        message=message,
+        form=form,
+        categorias_catering=categorias_catering,
+        pratos_por_categoria=pratos_por_categoria,
+        bebidas=bebidas
     )
 
 
@@ -689,7 +358,7 @@ def events():
 
 @app.route('/events/day/<int:year>/<int:month>/<int:day>')
 def events_by_day(year, month, day):
-    events = []
+    events_list = []
     for event in get_events():
         if not event['data']:
             continue
@@ -698,7 +367,7 @@ def events_by_day(year, month, day):
         except ValueError:
             continue
         if event_date.year == year and event_date.month == month and event_date.day == day:
-            events.append(event)
+            events_list.append(event)
 
     return render_template(
         'day_events.html',
@@ -706,7 +375,7 @@ def events_by_day(year, month, day):
         year=year,
         month=month,
         day=day,
-        events=events,
+        events=events_list,
         month_name=meses_do_ano[month - 1],
         tipos_evento=get_tipos_evento()
     )
@@ -739,66 +408,10 @@ def stock():
             message = 'Por favor, indique o nome do ingrediente ou insira o seu ID.'
         else:
             db = get_db()
-            
-            if item_id and item_id.isdigit():
-                db.execute(
-                    '''
-                    UPDATE Ingrediente
-                    SET nome = ?, quantidade = ?, unidade = ?, custo = ?, data_validade = ?
-                    WHERE id_ingrediente = ?
-                    ''',
-                    (
-                        form['nome'],
-                        int(form['quantidade']) if form['quantidade'].isdigit() else 0,
-                        form['unidade'],
-                        float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else 0.0,
-                        form['data_validade'] if form['data_validade'] else None,
-                        int(item_id)
-                    )
-                )
-                db.commit()
-                return redirect(url_for('stock', success=1))
-                
-            elif input_id and input_id.isdigit():
-                target_id = int(input_id)
-                existing = get_stock_item(target_id)
-                if not existing:
-                    message = f'Erro: Não existe nenhum produto no stock com o ID {target_id}. Deixe o ID em branco para criar um novo.'
-                else:
-                    add_qtd = int(form['quantidade']) if form['quantidade'].isdigit() else 0
-                    new_qtd = existing['quantidade'] + add_qtd
-                    
-                    new_nome = form['nome'] if form['nome'] else existing['nome']
-                    new_unidade = form['unidade'] if form['unidade'] else existing['unidade']
-                    new_custo = float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else existing['custo']
-                    new_validade = form['data_validade'] if form['data_validade'] else existing['data_validade']
-
-                    db.execute(
-                        '''
-                        UPDATE Ingrediente
-                        SET nome = ?, quantidade = ?, unidade = ?, custo = ?, data_validade = ?
-                        WHERE id_ingrediente = ?
-                        ''',
-                        (new_nome, new_qtd, new_unidade, new_custo, new_validade, target_id)
-                    )
-                    db.commit()
-                    return redirect(url_for('stock', success=1))
-                    
+            success, err_msg = save_stock_item(db, item_id, input_id, form)
+            if not success:
+                message = err_msg
             else:
-                db.execute(
-                    '''
-                    INSERT INTO Ingrediente (nome, quantidade, unidade, custo, data_validade)
-                    VALUES (?, ?, ?, ?, ?)
-                    ''',
-                    (
-                        form['nome'],
-                        int(form['quantidade']) if form['quantidade'].isdigit() else 0,
-                        form['unidade'],
-                        float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else 0.0,
-                        form['data_validade'] if form['data_validade'] else None
-                    )
-                )
-                db.commit()
                 return redirect(url_for('stock', success=1))
 
     edit_id = request.args.get('edit_id')
@@ -830,24 +443,32 @@ def stock():
 @app.route('/stock/delete/<int:item_id>', methods=['POST'])
 def delete_stock(item_id):
     db = get_db()
-    db.execute('UPDATE Ingrediente SET isdeleted = 1 WHERE id_ingrediente = ?', (item_id,))
-    db.commit()
+    delete_stock_item(db, item_id)
     return redirect(url_for('stock', success=1))
 
 
 @app.route('/menus/delete/<int:menu_id>', methods=['POST'])
 def delete_menu(menu_id):
     db = get_db()
-    db.execute('UPDATE Menu SET isdeleted = 1 WHERE id_menu = ?', (menu_id,))
-    db.commit()
+    db_delete_menu(db, menu_id)
     return redirect(url_for('manage_menus', success=1))
 
+@app.route('/dishes/delete/prato/<int:prato_id>', methods=['POST'])
+def delete_prato(prato_id):
+    db = get_db()
+    db_delete_prato(db, prato_id)
+    return redirect(url_for('manage_dishes', success=1))
+
+@app.route('/dishes/delete/bebida/<int:bebida_id>', methods=['POST'])
+def delete_bebida(bebida_id):
+    db = get_db()
+    db_delete_bebida(db, bebida_id)
+    return redirect(url_for('manage_dishes', success=1))
 
 @app.route('/events/delete/<int:event_id>', methods=['POST'])
 def delete_event(event_id):
     db = get_db()
-    db.execute('UPDATE Evento SET isdeleted = 1 WHERE id_evento = ?', (event_id,))
-    db.commit()
+    db_delete_evento(db, event_id)
     return redirect(url_for('events'))
 
 

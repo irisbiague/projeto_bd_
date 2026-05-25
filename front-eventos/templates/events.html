@@ -47,7 +47,10 @@
       {% endfor %}
     </div>
     <div class="card" style="margin-top:20px;">
-      <div class="section-title">Eventos deste mês</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div class="section-title" style="margin-bottom:0;">Eventos deste mês</div>
+        <input type="text" id="searchEvent" onkeyup="filterEvents()" placeholder="Pesquisar evento..." class="input-field" style="max-width: 300px; margin-bottom:0;">
+      </div>
       {% if events_of_month %}
         <div class="event-list">
           {% for event in events_of_month %}
@@ -70,4 +73,21 @@
       {% endif %}
     </div>
   </div>
+
+  <script>
+    function filterEvents() {
+      var input = document.getElementById("searchEvent");
+      var filter = input.value.toLowerCase();
+      var eventRows = document.querySelectorAll(".event-row");
+      
+      eventRows.forEach(function(row) {
+        var textContent = row.textContent || row.innerText;
+        if (textContent.toLowerCase().indexOf(filter) > -1) {
+          row.style.display = "flex";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    }
+  </script>
 {% endblock %}

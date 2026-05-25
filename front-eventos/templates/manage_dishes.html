@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="calendar-header">
+      <div>
+        <h1 class="title-large">Catálogo de Catering</h1>
+        <p class="subtitle">Faça a gestão dos seus Pratos e Bebidas independentemente dos menus.</p>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="section-title">Adicionar Novo Artigo</div>
+      <form method="post" action="{{ url_for('manage_dishes') }}">
+        <input type="hidden" name="id" value="{{ form.id|default('') }}" />
+        <div class="grid-2">
+          <div>
+            <label class="input-label">Tipo</label>
+            <select class="input-field" name="tipo" id="tipoSelect" onchange="toggleCategoria()">
+              <option value="prato" {% if form.tipo == 'prato' %}selected{% endif %}>Prato / Comida</option>
+              <option value="bebida" {% if form.tipo == 'bebida' %}selected{% endif %}>Bebida</option>
+            </select>
+          </div>
+          <div id="categoriaContainer">
+            <label class="input-label">Categoria (Apenas Comida)</label>
+            <select class="input-field" name="categoria">
+              {% for cat in categorias_catering %}
+                {% if cat.id != 'bebidas' %}
+                  <option value="{{ cat.id }}" {% if form.categoria == cat.id %}selected{% endif %}>{{ cat.titulo }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label class="input-label">Nome do Artigo</label>
+            <input class="input-field" name="nome" type="text" placeholder="Ex: Lombo Assado" value="{{ form.nome|default('') }}" />
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label class="input-label">Ingredientes / Receita (Opcional)</label>
+            <textarea class="input-textarea" name="receita" placeholder="Ex: Batata, Azeite...">{{ form.receita|default('') }}</textarea>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+          <button type="submit" class="button-primary">Guardar Artigo</button>
+        </div>
+      </form>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; margin-top:30px;">
+      <h2 class="section-title" style="margin-bottom:0;">Catálogo Existente</h2>
+      <input type="text" id="searchDish" onkeyup="filterDishes()" placeholder="Pesquisar..." class="input-field" style="max-width: 300px; margin-bottom:0;">
+    </div>
+
+    <div class="card-list" id="dishesList">
+      {% for cat in categorias_catering %}
+        {% if cat.id != 'bebidas' %}
+          {% set pratos = pratos_por_categoria.get(cat.id, []) %}
+          {% if pratos %}
+            <div class="card" style="margin-bottom: 20px;">
+              <h3 style="margin-top:0; color:#1F2937; border-bottom:1px solid #E5E7EB; padding-bottom:10px;">{{ cat.titulo }}</h3>
+              <div class="event-list">
+                {% for p in pratos %}
+                  <div class="event-row dish-row" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E5E7EB;padding:12px 0;">
+                    <div>
+                      <div style="font-weight:700;">{{ p.nome }}</div>
+                      {% if p.receita %}
+                        <div style="font-size:13px;color:#6B7280;">{{ p.receita }}</div>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <form method="post" action="{{ url_for('delete_prato', prato_id=p.id_prato) }}" onsubmit="return confirm('Tem a certeza?');">
+                        <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
+                      </form>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+
+      {% if bebidas %}
+        <div class="card" style="margin-bottom: 20px;">
+          <h3 style="margin-top:0; color:#1F2937; border-bottom:1px solid #E5E7EB; padding-bottom:10px;">Serviço de Bebidas</h3>
+          <div class="event-list">
+            {% for b in bebidas %}
+              <div class="event-row dish-row" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E5E7EB;padding:12px 0;">
+                <div>
+                  <div style="font-weight:700;">{{ b.nome }}</div>
+                  {% if b.receita %}
+                    <div style="font-size:13px;color:#6B7280;">{{ b.receita }}</div>
+                  {% endif %}
+                </div>
+                <div>
+                  <form method="post" action="{{ url_for('delete_bebida', bebida_id=b.id_bebida) }}" onsubmit="return confirm('Tem a certeza?');">
+                    <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    function toggleCategoria() {
+      var tipo = document.getElementById("tipoSelect").value;
+      var catContainer = document.getElementById("categoriaContainer");
+      if(tipo === 'bebida') {
+        catContainer.style.display = 'none';
+      } else {
+        catContainer.style.display = 'block';
+      }
+    }
+    toggleCategoria();
+
+    function filterDishes() {
+      var input = document.getElementById("searchDish");
+      var filter = input.value.toLowerCase();
+      var rows = document.querySelectorAll(".dish-row");
+      rows.forEach(function(row) {
+        var txt = row.textContent || row.innerText;
+        if (txt.toLowerCase().indexOf(filter) > -1) {
+          row.style.display = "flex";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    }
+  </script>
+{% endblock %}

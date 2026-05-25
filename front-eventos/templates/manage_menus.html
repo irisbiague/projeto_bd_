@@ -18,11 +18,25 @@
       <div class="grid-2">
         {% for cat in categorias_catering %}
           <div class="card">
-            <div class="section-title">{{ cat.titulo }}</div>
-            <label class="input-label">Descrição / Itens</label>
-            <input class="input-field" name="{{ cat.id }}_nome" type="text" placeholder="{{ cat.placeholderNome }}" value="{{ form[cat.id].nome|default('') }}" />
-            <label class="input-label">Ingredientes</label>
-            <textarea class="input-textarea" name="{{ cat.id }}_ingredientes" placeholder="Ex: Batata, Azeite, Sal, Alho...">{{ form[cat.id].ingredientes|default('') }}</textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div class="section-title" style="margin-bottom:0;">{{ cat.titulo }}</div>
+              <a href="{{ url_for('manage_dishes') }}" class="button-secondary" style="font-size:12px; padding:4px 8px;">Criar Novo</a>
+            </div>
+            <div style="margin-top:15px;">
+              <label class="input-label">Escolher do Catálogo</label>
+              <select class="input-field" name="{{ cat.id }}_id">
+                <option value="">-- Nenhuma opção selecionada --</option>
+                {% if cat.id == 'bebidas' %}
+                  {% for b in bebidas %}
+                    <option value="{{ b.id_bebida }}" {% if form[cat.id].id == (b.id_bebida|string) %}selected{% endif %}>{{ b.nome }}</option>
+                  {% endfor %}
+                {% else %}
+                  {% for p in pratos_por_categoria.get(cat.id, []) %}
+                    <option value="{{ p.id_prato }}" {% if form[cat.id].id == (p.id_prato|string) %}selected{% endif %}>{{ p.nome }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
           </div>
         {% endfor %}
       </div>
@@ -35,6 +49,10 @@
     </form>
   </div>
 
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; margin-top:30px;">
+    <h2 class="section-title" style="margin-bottom:0;">Menus Criados</h2>
+    <input type="text" id="searchMenu" onkeyup="filterMenus()" placeholder="Pesquisar menu..." class="input-field" style="max-width: 300px; margin-bottom:0;">
+  </div>
   <div class="card-list">
     {% if menus %}
       {% for menu in menus %}
@@ -67,4 +85,21 @@
       <div class="empty-state">Ainda não existem menus de catering configurados na plataforma.</div>
     {% endif %}
   </div>
+
+  <script>
+    function filterMenus() {
+      var input = document.getElementById("searchMenu");
+      var filter = input.value.toLowerCase();
+      var menuCards = document.querySelectorAll(".menu-card");
+      menuCards.forEach(function(card) {
+        var txt = card.textContent || card.innerText;
+        if (txt.toLowerCase().indexOf(filter) > -1) {
+          card.style.display = "block"; // Note: menu-card is just a block or flex element, we assume block works or flex. It's a class="card menu-card" which has flex in it? Usually "block" is fine for cards, or we can use "" to revert to original.
+          card.style.display = "";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    }
+  </script>
 {% endblock %}
