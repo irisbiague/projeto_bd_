@@ -4,21 +4,15 @@ from .database import get_db, fetch_all, fetch_one
 def get_events():
     db = get_db()
     cursor = db.execute('''
-        SELECT E.*, C.nome as cliente_nome, TE.descricao as tipo_evento
-        FROM DDL.Evento E
-        JOIN DDL.Cliente C ON E.id_cliente = C.id_cliente
-        JOIN DDL.Tipo_evento TE ON E.id_tipo_evento = TE.id_tipo_evento
-        WHERE E.isdeleted = 0
-        ORDER BY E.id_evento DESC
+        SELECT * 
+        FROM VIEWS.V_Eventos_Detalhados
+        ORDER BY id_evento DESC;
     ''')
     events = fetch_all(cursor)
     res = []
     for e in events:
         s_cursor = db.execute('''
-            SELECT S.descricao 
-            FROM DDL.Servico_Evento SE
-            JOIN DDL.Servico S ON SE.id_servico = S.id_servico
-            WHERE SE.id_evento = ? AND SE.isdeleted = 0 AND S.isdeleted = 0
+            SELECT * FROM UDF.fn_ServicosPorEvento(?)
         ''', (e['id_evento'],))
         servs = [row['descricao'] for row in fetch_all(s_cursor)]
         res.append({
@@ -36,31 +30,20 @@ def get_events():
 def get_event_by_id(event_id):
     db = get_db()
     cursor = db.execute('''
-        SELECT E.*, C.nome as cliente_nome, C.NIF as cliente_nif, C.tipo_cliente as cliente_tipo, C.codigo_postal as cliente_cp, C.localidade as cliente_localidade, TE.descricao as tipo_evento
-        FROM DDL.Evento E
-        JOIN DDL.Cliente C ON E.id_cliente = C.id_cliente
-        JOIN DDL.Tipo_evento TE ON E.id_tipo_evento = TE.id_tipo_evento
-        WHERE E.id_evento = ? AND E.isdeleted = 0
+        SELECT * FROM UDF.fn_EventoPorID(?)
     ''', (event_id,))
     e = fetch_one(cursor)
     if not e:
         return None
     s_cursor = db.execute('''
-        SELECT S.id_servico, S.descricao 
-        FROM DDL.Servico_Evento SE
-        JOIN DDL.Servico S ON SE.id_servico = S.id_servico
-        WHERE SE.id_evento = ? AND SE.isdeleted = 0 AND S.isdeleted = 0
+        SELECT * FROM UDF.fn_ServicosPorEvento(?)
     ''', (event_id,))
     s_results = fetch_all(s_cursor)
     servs = [row['descricao'] for row in s_results]
     servs_ids = [row['id_servico'] for row in s_results]
     
     emp_cursor = db.execute('''
-        SELECT EM.id_empregado, EM.nome, FE.designacao
-        FROM DDL.Trabalha_Em TE
-        JOIN DDL.Empregado EM ON TE.id_empregado = EM.id_empregado
-        JOIN DDL.Funcao_Empregado FE ON EM.id_funcao_empregado = FE.id_funcao_empregado
-        WHERE TE.id_evento = ?
+        SELECT * FROM UDF.fn_EmpregadosPorEvento(?)
     ''', (event_id,))
     empregados = [{'id': r['id_empregado'], 'nome': r['nome'], 'funcao': r['designacao']} for r in fetch_all(emp_cursor)]
 
@@ -132,10 +115,7 @@ def get_servicos():
 def get_empregados():
     db = get_db()
     cursor = db.execute('''
-        SELECT E.id_empregado, E.nome, FE.designacao as funcao
-        FROM DDL.Empregado E
-        JOIN DDL.Funcao_Empregado FE ON E.id_funcao_empregado = FE.id_funcao_empregado
-        WHERE E.isdeleted = 0
+        SELECT * FROM VIEWS.V_Empregados_Evento
     ''')
     emps = fetch_all(cursor)
     return [{'id': row['id_empregado'], 'nome': row['nome'], 'funcao': row['funcao']} for row in emps]
