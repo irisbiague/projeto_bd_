@@ -15,6 +15,9 @@ GO
 CREATE SCHEMA SP;
 GO
 
+CREATE SCHEMA VIEWS;
+GO
+
 -- Cliente
 CREATE TABLE DDL.Cliente (
     id_cliente      INT IDENTITY PRIMARY KEY,
