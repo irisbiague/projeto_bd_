@@ -29,6 +29,14 @@
           </select>
         </div>
         <div>
+          <label class="input-label">Código Postal do Cliente</label>
+          <input class="input-field" name="cliente_cp" type="text" placeholder="Ex: 4000-000" value="{{ form.cliente_cp|default('') }}" />
+        </div>
+        <div>
+          <label class="input-label">Localidade do Cliente</label>
+          <input class="input-field" name="cliente_localidade" type="text" placeholder="Ex: Porto" value="{{ form.cliente_localidade|default('') }}" />
+        </div>
+        <div>
           <label class="input-label">Tipo de Evento</label>
           <select class="input-select" name="tipo">
             {% for key, tipo in tipos_evento.items() %}
@@ -67,9 +75,12 @@
             <div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:10px;">RESUMO DO MENU:</div>
             <div class="menu-summary-grid">
               {% for cat in categorias_catering %}
-                {% if selected_menu[cat.id].nome %}
+                {% if selected_menu[cat.id]|length > 0 %}
                   <div>
-                    <strong>{{ cat.titulo }}:</strong> {{ selected_menu[cat.id].nome }}
+                    <strong>{{ cat.titulo }}:</strong> 
+                    {% for item in selected_menu[cat.id] %}
+                      {{ item.nome }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
                   </div>
                 {% endif %}
               {% endfor %}

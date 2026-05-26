@@ -24,18 +24,18 @@
             </div>
             <div style="margin-top:15px;">
               <label class="input-label">Escolher do Catálogo</label>
-              <select class="input-field" name="{{ cat.id }}_id">
-                <option value="">-- Nenhuma opção selecionada --</option>
+              <select class="input-field" name="{{ cat.id }}_id" multiple style="height: 100px;">
                 {% if cat.id == 'bebidas' %}
                   {% for b in bebidas %}
-                    <option value="{{ b.id_bebida }}" {% if form[cat.id].id == (b.id_bebida|string) %}selected{% endif %}>{{ b.nome }}</option>
+                    <option value="{{ b.id_bebida }}" {% if (b.id_bebida|string) in form[cat.id].id %}selected{% endif %}>{{ b.nome }}</option>
                   {% endfor %}
                 {% else %}
                   {% for p in pratos_por_categoria.get(cat.id, []) %}
-                    <option value="{{ p.id_prato }}" {% if form[cat.id].id == (p.id_prato|string) %}selected{% endif %}>{{ p.nome }}</option>
+                    <option value="{{ p.id_prato }}" {% if (p.id_prato|string) in form[cat.id].id %}selected{% endif %}>{{ p.nome }}</option>
                   {% endfor %}
                 {% endif %}
               </select>
+              <div style="font-size: 10px; color: #6B7280; margin-top: 4px;">Mantenha premido Ctrl (ou Cmd) para selecionar múltiplos.</div>
             </div>
           </div>
         {% endfor %}
@@ -68,13 +68,19 @@
           </div>
           <div class="menu-grid">
             {% for cat in categorias_catering %}
-              {% if menu[cat.id].nome %}
+              {% if menu[cat.id]|length > 0 %}
                 <div class="menu-grid-item">
                   <div class="menu-grid-item-title">{{ cat.titulo }}</div>
-                  <div>{{ menu[cat.id].nome }}</div>
-                  {% if menu[cat.id].ingredientes %}
-                    <div style="color:#6B7280;font-size:11px;margin-top:4px;">Ingredientes: {{ menu[cat.id].ingredientes }}</div>
-                  {% endif %}
+                  <ul style="margin: 5px 0 0 20px; padding: 0;">
+                    {% for item in menu[cat.id] %}
+                      <li style="margin-bottom: 4px;">
+                        <strong>{{ item.nome }}</strong>
+                        {% if item.ingredientes %}
+                          <div style="color:#6B7280;font-size:11px;margin-top:2px;">{{ item.ingredientes }}</div>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
                 </div>
               {% endif %}
             {% endfor %}

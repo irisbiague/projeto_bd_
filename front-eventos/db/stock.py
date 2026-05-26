@@ -12,12 +12,12 @@ def row_to_stock(row):
 
 def get_stock_items():
     db = get_db()
-    cursor = db.execute('SELECT * FROM Ingrediente WHERE isdeleted = 0 ORDER BY id_ingrediente DESC')
+    cursor = db.execute('SELECT * FROM DDL.Ingrediente WHERE isdeleted = 0 ORDER BY id_ingrediente DESC')
     return [row_to_stock(row) for row in fetch_all(cursor)]
 
 def get_stock_item(item_id):
     db = get_db()
-    cursor = db.execute('SELECT * FROM Ingrediente WHERE id_ingrediente = ? AND isdeleted = 0', (item_id,))
+    cursor = db.execute('SELECT * FROM DDL.Ingrediente WHERE id_ingrediente = ? AND isdeleted = 0', (item_id,))
     row = fetch_one(cursor)
     return row_to_stock(row) if row else None
 
@@ -25,7 +25,7 @@ def save_stock_item(db, item_id, input_id, form):
     if item_id and item_id.isdigit():
         db.execute(
             '''
-            UPDATE Ingrediente
+            UPDATE DDL.Ingrediente
             SET nome = ?, quantidade = ?, unidade = ?, custo = ?, data_validade = ?
             WHERE id_ingrediente = ?
             ''',
@@ -57,7 +57,7 @@ def save_stock_item(db, item_id, input_id, form):
 
             db.execute(
                 '''
-                UPDATE Ingrediente
+                UPDATE DDL.Ingrediente
                 SET nome = ?, quantidade = ?, unidade = ?, custo = ?, data_validade = ?
                 WHERE id_ingrediente = ?
                 ''',
@@ -69,7 +69,7 @@ def save_stock_item(db, item_id, input_id, form):
     else:
         db.execute(
             '''
-            INSERT INTO Ingrediente (nome, quantidade, unidade, custo, data_validade)
+            INSERT INTO DDL.Ingrediente (nome, quantidade, unidade, custo, data_validade)
             VALUES (?, ?, ?, ?, ?)
             ''',
             (
@@ -84,5 +84,5 @@ def save_stock_item(db, item_id, input_id, form):
         return True, None
 
 def delete_stock_item(db, item_id):
-    db.execute('UPDATE Ingrediente SET isdeleted = 1 WHERE id_ingrediente = ?', (item_id,))
+    db.execute('UPDATE DDL.Ingrediente SET isdeleted = 1 WHERE id_ingrediente = ?', (item_id,))
     db.commit()

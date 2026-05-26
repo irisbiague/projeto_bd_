@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="calendar-header">
+      <div>
+        <h1 class="title-large">Inventário Necessário</h1>
+        <p class="subtitle">Lista de ingredientes e quantidades totais para o evento: <strong>{{ event.cliente }}</strong> ({{ event.pessoas }} pessoas).</p>
+      </div>
+      <div>
+        <a href="{{ url_for('events') }}" class="button-secondary">Voltar ao calendário</a>
+      </div>
+    </div>
+
+    {% if inventory %}
+      <div style="margin-top: 20px;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #E5E7EB; text-align: left; background: #F9FAFB;">
+              <th style="padding: 12px; color: #374151; font-weight: 600;">Ingrediente</th>
+              <th style="padding: 12px; color: #374151; font-weight: 600;">Qtd. Unitária</th>
+              <th style="padding: 12px; color: #374151; font-weight: 600;">Qtd. Total (p/ {{ event.pessoas }} pessoas)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in inventory %}
+              <tr style="border-bottom: 1px solid #E5E7EB;">
+                <td style="padding: 12px; color: #111827; font-weight: 500;">{{ item.nome }}</td>
+                <td style="padding: 12px; color: #6B7280;">{{ item.qtd_unitaria }} un.</td>
+                <td style="padding: 12px; color: #111827; font-weight: 700;">{{ item.total }} un.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">Este evento não tem um menu com ingredientes associados ou não necessita de inventário extra.</div>
+    {% endif %}
+  </div>
+{% endblock %}

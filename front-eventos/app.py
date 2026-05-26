@@ -5,10 +5,11 @@ from datetime import date, datetime
 from flask import Flask, g, redirect, render_template, request, session, url_for
 
 from db.database import SQL_SERVER_CONFIG, set_db_config, get_db, close_db, build_connection_string, init_db
-from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servicos, save_evento, delete_evento as db_delete_evento
+from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servicos, save_evento, delete_evento as db_delete_evento, get_event_inventory
 from db.menus import (
     get_menus, get_menu_by_id, save_menu, delete_menu as db_delete_menu, categorias_catering,
-    get_todos_pratos, get_todas_bebidas, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida
+    get_todos_pratos, get_todas_bebidas, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida,
+    map_categoria_bd
 )
 from db.stock import get_stock_items, get_stock_item, save_stock_item, delete_stock_item
 
@@ -140,6 +141,8 @@ def create_event():
         'cliente': '',
         'cliente_nif': '',
         'cliente_tipo': 'Empresa',
+        'cliente_cp': '',
+        'cliente_localidade': '',
         'data': '',
         'pessoas': '',
         'local': '',
@@ -153,6 +156,8 @@ def create_event():
             'cliente': request.form.get('cliente', '').strip(),
             'cliente_nif': request.form.get('cliente_nif', '').strip(),
             'cliente_tipo': request.form.get('cliente_tipo', 'Empresa').strip(),
+            'cliente_cp': request.form.get('cliente_cp', '').strip(),
+            'cliente_localidade': request.form.get('cliente_localidade', '').strip(),
             'data': request.form.get('data', '').strip(),
             'pessoas': request.form.get('pessoas', '').strip(),
             'local': request.form.get('local', '').strip(),
@@ -211,13 +216,13 @@ def manage_menus():
     editing_menu = None
     form = {'menu_id': '', 'menu_name': ''}
     for cat in categorias_catering:
-        form[cat['id']] = {'id': ''}
+        form[cat['id']] = {'id': []}
 
     if request.method == 'POST':
         form['menu_id'] = request.form.get('menu_id', '').strip()
         form['menu_name'] = request.form.get('menu_name', '').strip()
         for cat in categorias_catering:
-            form[cat['id']]['id'] = request.form.get(f"{cat['id']}_id", '').strip()
+            form[cat['id']]['id'] = request.form.getlist(f"{cat['id']}_id")
 
         if not form['menu_name']:
             message = 'Por favor, indique um nome para o menu.'
@@ -237,7 +242,7 @@ def manage_menus():
                 }
                 for cat in categorias_catering:
                     form[cat['id']] = {
-                        'id': str(editing_menu[cat['id']].get('id', ''))
+                        'id': [str(item['id']) for item in editing_menu[cat['id']]]
                     }
 
     if request.args.get('success'):
@@ -249,7 +254,7 @@ def manage_menus():
 
     pratos_por_categoria = {}
     for p in pratos:
-        cat = p['categoria']
+        cat = map_categoria_bd(p['categoria'])
         pratos_por_categoria.setdefault(cat, []).append(p)
 
     return render_template(
@@ -294,7 +299,7 @@ def manage_dishes():
 
     pratos_por_categoria = {}
     for p in pratos:
-        cat = p['categoria']
+        cat = map_categoria_bd(p['categoria'])
         pratos_por_categoria.setdefault(cat, []).append(p)
 
     return render_template(
@@ -367,7 +372,11 @@ def events_by_day(year, month, day):
         except ValueError:
             continue
         if event_date.year == year and event_date.month == month and event_date.day == day:
-            events_list.append(event)
+            detailed_event = get_event_by_id(event['id'])
+            if detailed_event:
+                if detailed_event['menuId']:
+                    detailed_event['menu'] = get_menu_by_id(detailed_event['menuId'])
+                events_list.append(detailed_event)
 
     return render_template(
         'day_events.html',
@@ -378,6 +387,21 @@ def events_by_day(year, month, day):
         events=events_list,
         month_name=meses_do_ano[month - 1],
         tipos_evento=get_tipos_evento()
+    )
+
+
+@app.route('/events/inventory/<int:event_id>')
+def event_inventory(event_id):
+    event = get_event_by_id(event_id)
+    if not event:
+        return redirect(url_for('events'))
+    
+    inventory = get_event_inventory(event_id)
+    return render_template(
+        'event_inventory.html',
+        active_page='events',
+        event=event,
+        inventory=inventory
     )
 
 
