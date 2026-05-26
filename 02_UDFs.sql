@@ -101,3 +101,64 @@ RETURN
         ON cb.id_ingrediente = i.id_ingrediente
     WHERE ev.id_evento = @id_evento
 );
+GO
+
+CREATE FUNCTION UDF.fn_ServicosPorEvento (@id_evento INT)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+        S.id_servico AS id_servico, 
+        S.descricao
+    FROM DDL.Servico_Evento SE
+    INNER JOIN DDL.Servico S
+        ON SE.id_servico = S.id_servico
+    WHERE SE.id_evento = @id_evento AND SE.isdeleted = 0 AND S.isdeleted = 0
+);
+GO
+
+CREATE FUNCTION UDF.fn_EventoPorId (@id_evento INT)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT E.*, 
+        C.nome as cliente_nome, 
+        C.NIF as cliente_nif, 
+        C.tipo_cliente as cliente_tipo, 
+        C.codigo_postal as cliente_cp, 
+        C.localidade as cliente_localidade, 
+        TE.descricao as tipo_evento
+    FROM DDL.Evento E
+        INNER JOIN DDL.Cliente C 
+            ON E.id_cliente = C.id_cliente
+        INNER JOIN DDL.Tipo_evento TE 
+            ON E.id_tipo_evento = TE.id_tipo_evento
+    WHERE E.id_evento = @id_evento AND E.isdeleted = 0
+);
+GO
+
+CREATE FUNCTION UDF.fn_EmpregadosPorEvento (@id_evento INT)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT * 
+    FROM VIEWS.V_Empregados_Evento
+    WHERE TE.id_evento = @id_evento
+);
+GO
+
+CREATE FUNCTION UDF.fn_IngredientesQuantidadeCustoPorId (@id_ingrediente INT)
+RETURNS TABLE
+AS
+RETURN
+(
+   SELECT * 
+   FROM VIEWS.V_Ingredientes_quantidade_custo 
+   WHERE id_ingrediente = @id_ingrediente 
+);
+GO
+
+
