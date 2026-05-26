@@ -6,10 +6,17 @@ USE Projeto;
 GO
 
 -- script para a BD da aula
-CREATE SCHEMA Projeto;
+CREATE SCHEMA DDL;
+GO
+
+CREATE SCHEMA UDF;
+GO
+
+CREATE SCHEMA SP;
+GO
 
 -- Cliente
-CREATE TABLE Cliente (
+CREATE TABLE DDL.Cliente (
     id_cliente      INT IDENTITY PRIMARY KEY,
     tipo_cliente    VARCHAR(50) NOT NULL,
     telefone        VARCHAR(20),
@@ -34,7 +41,7 @@ CREATE TABLE Cliente (
 );
 
 -- Tipo_evento
-CREATE TABLE Tipo_evento (
+CREATE TABLE DDL.Tipo_evento (
     id_tipo_evento INT IDENTITY PRIMARY KEY,
     descricao VARCHAR(100) NOT NULL,
 	isdeleted INT DEFAULT 0,
@@ -47,7 +54,7 @@ CREATE TABLE Tipo_evento (
 );
 
 -- Tipo_Menu
-CREATE TABLE Tipo_Menu (
+CREATE TABLE DDL.Tipo_Menu (
     id_tipo_menu    INT IDENTITY PRIMARY KEY,
     designacao      VARCHAR(80),
     isdeleted       INT DEFAULT 0,
@@ -60,21 +67,21 @@ CREATE TABLE Tipo_Menu (
 );
 
 -- Menu
-CREATE TABLE Menu (
+CREATE TABLE DDL.Menu (
     id_menu         INT IDENTITY PRIMARY KEY,    
     id_tipo_menu    INT,
     descricao       VARCHAR(150),
     isdeleted       INT DEFAULT 0,
 
     FOREIGN KEY (id_tipo_menu)
-        REFERENCES Tipo_Menu(id_tipo_menu),    
+        REFERENCES DDL.Tipo_Menu(id_tipo_menu),    
 
     CONSTRAINT CHK_Menu_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
 
 -- Evento
-CREATE TABLE Evento (
+CREATE TABLE DDL.Evento (
     id_evento       INT IDENTITY PRIMARY KEY,
     id_cliente      INT NOT NULL,
     id_menu         INT NOT NULL,
@@ -90,13 +97,13 @@ CREATE TABLE Evento (
     isdeleted       INT DEFAULT 0,
 
     FOREIGN KEY (id_cliente)
-        REFERENCES Cliente(id_cliente),
+        REFERENCES DDL.Cliente(id_cliente),
 
     FOREIGN KEY (id_menu)
-        REFERENCES Menu(id_menu),
+        REFERENCES DDL.Menu(id_menu),
 
     FOREIGN KEY (id_tipo_evento)
-        REFERENCES Tipo_evento(id_tipo_evento),
+        REFERENCES DDL.Tipo_evento(id_tipo_evento),
 
     CONSTRAINT CHK_Evento_Custo
         CHECK (custo >= 0),
@@ -114,8 +121,8 @@ CREATE TABLE Evento (
         CHECK (isdeleted IN (0,1))
 );
 
--- Função_Empregado
-CREATE TABLE Funcao_Empregado (
+-- Funï¿½ï¿½o_Empregado
+CREATE TABLE DDL.Funcao_Empregado (
     id_funcao_empregado     INT IDENTITY PRIMARY KEY,
     designacao              VARCHAR(100),
     isdeleted               INT DEFAULT 0,
@@ -128,7 +135,7 @@ CREATE TABLE Funcao_Empregado (
 );
 
 -- Empregado
-CREATE TABLE Empregado (
+CREATE TABLE DDL.Empregado (
     id_empregado            INT IDENTITY PRIMARY KEY,
     id_funcao_empregado     INT NOT NULL,
     localidade              VARCHAR(80),
@@ -141,7 +148,7 @@ CREATE TABLE Empregado (
     isdeleted               INT DEFAULT 0,
 
     FOREIGN KEY (id_funcao_empregado)
-        REFERENCES Funcao_Empregado(id_funcao_empregado),
+        REFERENCES DDL.Funcao_Empregado(id_funcao_empregado),
 
     CONSTRAINT CHK_Empregado_Preco
         CHECK (preco_hora >= 0),
@@ -157,7 +164,7 @@ CREATE TABLE Empregado (
 );
 
 -- Trabalha_Em
-CREATE TABLE Trabalha_Em (
+CREATE TABLE DDL.Trabalha_Em (
     id_empregado    INT,
     id_evento       INT,
     duracao         INT,
@@ -166,10 +173,10 @@ CREATE TABLE Trabalha_Em (
     PRIMARY KEY (id_empregado, id_evento),
 
     FOREIGN KEY (id_empregado)
-        REFERENCES Empregado(id_empregado),
+        REFERENCES DDL.Empregado(id_empregado),
 
     FOREIGN KEY (id_evento)
-        REFERENCES Evento(id_evento),
+        REFERENCES DDL.Evento(id_evento),
 
     CONSTRAINT CHK_TrabalhaEm_Duracao
         CHECK (duracao > 0),    
@@ -178,8 +185,8 @@ CREATE TABLE Trabalha_Em (
         CHECK (isdeleted IN (0,1))
 );
 
--- Serviço
-CREATE TABLE Servico (
+-- Serviï¿½o
+CREATE TABLE DDL.Servico (
     id_servico      INT IDENTITY PRIMARY KEY,
     custo           DECIMAL(10,2),
     descricao       VARCHAR(150),
@@ -192,20 +199,20 @@ CREATE TABLE Servico (
         CHECK (isdeleted IN (0,1))
 );
 
--- Serviço_Interno
-CREATE TABLE Servico_Interno (
+-- Serviï¿½o_Interno
+CREATE TABLE DDL.Servico_Interno (
     id_servico  INT PRIMARY KEY,
     isdeleted   INT DEFAULT 0,
 
     FOREIGN KEY (id_servico)    
-		REFERENCES Servico(id_servico),    
+		REFERENCES DDL.Servico(id_servico),    
 
     CONSTRAINT CHK_Servico_Interno_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
 
 -- Fornecedor
-CREATE TABLE Fornecedor (
+CREATE TABLE DDL.Fornecedor (
     id_fornecedor   INT IDENTITY PRIMARY KEY,
     localidade      VARCHAR(80),
     morada          VARCHAR(150),
@@ -221,8 +228,8 @@ CREATE TABLE Fornecedor (
         CHECK (isdeleted IN (0,1))
 );
 
--- Serviço_Externo
-CREATE TABLE Servico_Externo (
+-- Serviï¿½o_Externo
+CREATE TABLE DDL.Servico_Externo (
     id_servico      INT,
     id_fornecedor   INT,
     isdeleted       INT DEFAULT 0,
@@ -230,35 +237,35 @@ CREATE TABLE Servico_Externo (
     PRIMARY KEY (id_servico, id_fornecedor),
 
     FOREIGN KEY (id_servico)        
-        REFERENCES Servico(id_servico),
+        REFERENCES DDL.Servico(id_servico),
 
     FOREIGN KEY (id_fornecedor)     
-        REFERENCES Fornecedor(id_fornecedor),    
+        REFERENCES DDL.Fornecedor(id_fornecedor),    
 
     CONSTRAINT CHK_Servico_Externo_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
 
--- Serviço_Evento
-CREATE TABLE Servico_Evento (
+-- Serviï¿½o_Evento
+CREATE TABLE DDL.Servico_Evento (
 	id_servico  INT,
     id_evento   INT,
     isdeleted INT DEFAULT 0,
 
     PRIMARY KEY (id_servico, id_evento),
 
-    FOREIGN KEY (id_servico)    
-        REFERENCES Servico(id_servico),
+    FOREIGN KEY (id_servico)
+        REFERENCES DDL.Servico(id_servico),
 
     FOREIGN KEY (id_evento)     
-        REFERENCES Evento(id_evento),    
+        REFERENCES DDL.Evento(id_evento),    
 
     CONSTRAINT CHK_Servico_Evento_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
 
 -- Tipo_Ingrediente
-CREATE TABLE Tipo_Ingrediente (
+CREATE TABLE DDL.Tipo_Ingrediente (
     id_tipo_ingrediente     INT IDENTITY PRIMARY KEY,
     designacao              VARCHAR(80),
     isdeleted               INT DEFAULT 0,
@@ -271,14 +278,14 @@ CREATE TABLE Tipo_Ingrediente (
 );
 
 -- Subtipo_Ingrediente
-CREATE TABLE Subtipo_Ingrediente (
+CREATE TABLE DDL.Subtipo_Ingrediente (
     id_subtipo_ingrediente  INT IDENTITY PRIMARY KEY,
     id_tipo_ingrediente     INT,
     designacao              VARCHAR(80),
     isdeleted               INT DEFAULT 0,
 
      FOREIGN KEY (id_tipo_ingrediente)
-        REFERENCES Tipo_Ingrediente(id_tipo_ingrediente),
+        REFERENCES DDL.Tipo_Ingrediente(id_tipo_ingrediente),
 
     CONSTRAINT CHK_SubtipoIngrediente_Designacao
         CHECK (LEN(designacao) > 0),    
@@ -288,7 +295,7 @@ CREATE TABLE Subtipo_Ingrediente (
 );
 
 -- Ingrediente
-CREATE TABLE Ingrediente (
+CREATE TABLE DDL.Ingrediente (
     id_ingrediente              INT IDENTITY PRIMARY KEY,
     id_subtipo_ingrediente      INT,
     id_fornecedor               INT,
@@ -300,10 +307,10 @@ CREATE TABLE Ingrediente (
     isdeleted                   INT DEFAULT 0,
 
     FOREIGN KEY (id_subtipo_ingrediente)
-        REFERENCES Subtipo_Ingrediente(id_subtipo_ingrediente),
+        REFERENCES DDL.Subtipo_Ingrediente(id_subtipo_ingrediente),
 
     FOREIGN KEY (id_fornecedor)
-        REFERENCES Fornecedor(id_fornecedor),
+        REFERENCES DDL.Fornecedor(id_fornecedor),
 
     CONSTRAINT CHK_Ingrediente_Quantidade
         CHECK (quantidade >= 0),
@@ -316,7 +323,7 @@ CREATE TABLE Ingrediente (
 );
 
 -- Lote
-CREATE TABLE Lote (
+CREATE TABLE DDL.Lote (
     id_lote                 INT IDENTITY PRIMARY KEY,
     id_ingrediente          INT,
     id_fornecedor           INT,
@@ -326,10 +333,10 @@ CREATE TABLE Lote (
     isdeleted				INT DEFAULT 0,
 
     FOREIGN KEY (id_ingrediente)
-        REFERENCES Ingrediente(id_ingrediente),
+        REFERENCES DDL.Ingrediente(id_ingrediente),
 
     FOREIGN KEY (id_fornecedor)
-        REFERENCES Fornecedor(id_fornecedor),
+        REFERENCES DDL.Fornecedor(id_fornecedor),
 
     CONSTRAINT CHK_Lote_Preco
         CHECK (preco >= 0),
@@ -348,7 +355,7 @@ CREATE TABLE Lote (
 );
 
 -- Tipo_Bebida
-CREATE TABLE Tipo_Bebida (
+CREATE TABLE DDL.Tipo_Bebida (
     id_tipo_bebida  INT IDENTITY PRIMARY KEY,
     designacao      VARCHAR(80),
     isdeleted       INT DEFAULT 0,
@@ -361,7 +368,7 @@ CREATE TABLE Tipo_Bebida (
 );
 
 -- Bebida
-CREATE TABLE Bebida (
+CREATE TABLE DDL.Bebida (
     id_bebida           INT IDENTITY PRIMARY KEY,    
     id_tipo_bebida      INT,
     nome                VARCHAR(80),
@@ -369,7 +376,7 @@ CREATE TABLE Bebida (
     isdeleted           INT DEFAULT 0,
 
     FOREIGN KEY (id_tipo_bebida)
-        REFERENCES Tipo_Bebida(id_tipo_bebida), 
+        REFERENCES DDL.Tipo_Bebida(id_tipo_bebida), 
 
     CONSTRAINT CHK_Bebida_nome
         CHECK (LEN(nome) > 0),    
@@ -379,7 +386,7 @@ CREATE TABLE Bebida (
 );
 
 -- Tipo_Prato
-CREATE TABLE Tipo_Prato (
+CREATE TABLE DDL.Tipo_Prato (
     id_tipo_prato   INT IDENTITY PRIMARY KEY,
     designacao      VARCHAR(80),
     isdeleted       INT DEFAULT 0,
@@ -392,7 +399,7 @@ CREATE TABLE Tipo_Prato (
 );
 
 -- Prato
-CREATE TABLE Prato (
+CREATE TABLE DDL.Prato (
     id_prato        INT IDENTITY PRIMARY KEY,    
     id_tipo_prato   INT,
     nome            VARCHAR(80),
@@ -400,7 +407,7 @@ CREATE TABLE Prato (
     isdeleted       INT DEFAULT 0,
 	   
     FOREIGN KEY (id_tipo_prato)
-        REFERENCES Tipo_Prato(id_tipo_prato),
+        REFERENCES DDL.Tipo_Prato(id_tipo_prato),
 
     CONSTRAINT CHK_Prato_nome
         CHECK (LEN(nome) > 0),    
@@ -410,7 +417,7 @@ CREATE TABLE Prato (
 );
 
 -- Constituicao do Menu (Pratos)
-CREATE TABLE Constituicao_Menu_Pratos (
+CREATE TABLE DDL.Constituicao_Menu_Pratos (
     id_menu     INT,
     id_prato    INT,
     isdeleted INT DEFAULT 0,
@@ -418,17 +425,17 @@ CREATE TABLE Constituicao_Menu_Pratos (
     PRIMARY KEY (id_menu,id_prato),
 
     FOREIGN KEY (id_menu)
-        REFERENCES Menu(id_menu),
+        REFERENCES DDL.Menu(id_menu),
 
     FOREIGN KEY (id_prato)
-        REFERENCES Prato(id_prato),    
+        REFERENCES DDL.Prato(id_prato),    
 
     CONSTRAINT CHK_Constituicao_Menu_Pratos_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
 
 -- Constituicao do Menu (Bebidas)
-CREATE TABLE Constituicao_Menu_Bebidas (
+CREATE TABLE DDL.Constituicao_Menu_Bebidas (
     id_menu     INT,
     id_bebida   INT,
     isdeleted   INT DEFAULT 0,
@@ -436,17 +443,17 @@ CREATE TABLE Constituicao_Menu_Bebidas (
     PRIMARY KEY (id_menu,id_bebida),
 
     FOREIGN KEY (id_menu)
-        REFERENCES Menu(id_menu),
+        REFERENCES DDL.Menu(id_menu),
 
     FOREIGN KEY (id_bebida)
-        REFERENCES Bebida(id_bebida),    
+        REFERENCES DDL.Bebida(id_bebida),    
 
     CONSTRAINT CHK_Constituicao_Menu_Bebidas_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
 
 -- Constituicao_Prato
-CREATE TABLE Constituicao_Prato (
+CREATE TABLE DDL.Constituicao_Prato (
     id_prato        INT,
     id_ingrediente  INT,
     quantidade      INT,
@@ -455,10 +462,10 @@ CREATE TABLE Constituicao_Prato (
     PRIMARY KEY (id_prato, id_ingrediente),
 
     FOREIGN KEY (id_prato)
-        REFERENCES Prato(id_prato),
+        REFERENCES DDL.Prato(id_prato),
 
     FOREIGN KEY (id_ingrediente)
-        REFERENCES Ingrediente(id_ingrediente),
+        REFERENCES DDL.Ingrediente(id_ingrediente),
 
     CONSTRAINT CHK_ConstituicaoPrato_Quantidade
         CHECK (quantidade > 0),    
@@ -468,7 +475,7 @@ CREATE TABLE Constituicao_Prato (
 );
 
 -- Constituicao_Bebida
-CREATE TABLE Constituicao_Bebida (
+CREATE TABLE DDL.Constituicao_Bebida (
     id_bebida       INT,
     id_ingrediente  INT,
     quantidade      INT,
@@ -477,10 +484,10 @@ CREATE TABLE Constituicao_Bebida (
     PRIMARY KEY (id_bebida, id_ingrediente),
 
     FOREIGN KEY (id_bebida)
-        REFERENCES Bebida(id_bebida),
+        REFERENCES DDL.Bebida(id_bebida),
 
     FOREIGN KEY (id_ingrediente)
-        REFERENCES Ingrediente(id_ingrediente),
+        REFERENCES DDL.Ingrediente(id_ingrediente),
 
     CONSTRAINT CHK_ConstituicaoBebida_Quantidade
         CHECK (quantidade > 0),    
