@@ -302,9 +302,7 @@ CREATE TABLE DDL.Ingrediente (
     id_ingrediente              INT IDENTITY PRIMARY KEY,
     id_subtipo_ingrediente      INT,
     id_fornecedor               INT,
-    data_validade               DATE,
-    quantidade                  INT,
-    custo                       DECIMAL(10,2),
+    data_validade               DATE,    
     nome                        VARCHAR(100),
 	unidade						VARCHAR(5),
     isdeleted                   INT DEFAULT 0,
@@ -314,13 +312,7 @@ CREATE TABLE DDL.Ingrediente (
 
     FOREIGN KEY (id_fornecedor)
         REFERENCES DDL.Fornecedor(id_fornecedor),
-
-    CONSTRAINT CHK_Ingrediente_Quantidade
-        CHECK (quantidade >= 0),
-
-    CONSTRAINT CHK_Ingrediente_Custo
-        CHECK (custo >= 0),    
-
+    
     CONSTRAINT CHK_Ingrediente_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
