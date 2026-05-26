@@ -5,7 +5,7 @@ from datetime import date, datetime
 from flask import Flask, g, redirect, render_template, request, session, url_for
 
 from db.database import SQL_SERVER_CONFIG, set_db_config, get_db, close_db, build_connection_string, init_db
-from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servicos, save_evento, delete_evento as db_delete_evento, get_event_inventory
+from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servicos, get_empregados, save_evento, delete_evento as db_delete_evento, get_event_inventory
 from db.menus import (
     get_menus, get_menu_by_id, save_menu, delete_menu as db_delete_menu, categorias_catering,
     get_todos_pratos, get_todas_bebidas, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida,
@@ -147,7 +147,8 @@ def create_event():
         'pessoas': '',
         'local': '',
         'menu_id': '',
-        'servicos': []
+        'servicos': [],
+        'empregados': []
     }
 
     if request.method == 'POST':
@@ -162,7 +163,8 @@ def create_event():
             'pessoas': request.form.get('pessoas', '').strip(),
             'local': request.form.get('local', '').strip(),
             'menu_id': request.form.get('menu_id', '').strip(),
-            'servicos': request.form.getlist('servicos')
+            'servicos': request.form.getlist('servicos'),
+            'empregados': request.form.getlist('empregados')
         }
         event_id = request.form.get('event_id')
 
@@ -187,7 +189,8 @@ def create_event():
                     'pessoas': str(editing_event['pessoas'] or ''),
                     'local': editing_event['local'],
                     'menu_id': str(editing_event['menuId']) if editing_event['menuId'] else '',
-                    'servicos': editing_event['servicos'] or []
+                    'servicos': [str(s_id) for s_id in editing_event['servicos_ids']] if 'servicos_ids' in editing_event else [],
+                    'empregados': [str(e['id']) for e in editing_event['empregados']] if editing_event.get('empregados') else []
                 }
 
     if request.args.get('success'):
@@ -205,6 +208,7 @@ def create_event():
         selected_menu=selected_menu,
         categorias_catering=categorias_catering,
         servicos_list=get_servicos(),
+        empregados_list=get_empregados(),
         tipos_evento=get_tipos_evento(),
         editing_event=editing_event
     )

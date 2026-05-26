@@ -46,20 +46,23 @@ def get_event_by_id(event_id):
     if not e:
         return None
     s_cursor = db.execute('''
-        SELECT S.descricao 
+        SELECT S.id_servico, S.descricao 
         FROM DDL.Servico_Evento SE
         JOIN DDL.Servico S ON SE.id_servico = S.id_servico
         WHERE SE.id_evento = ? AND SE.isdeleted = 0 AND S.isdeleted = 0
     ''', (event_id,))
-    servs = [row['descricao'] for row in fetch_all(s_cursor)]
+    s_results = fetch_all(s_cursor)
+    servs = [row['descricao'] for row in s_results]
+    servs_ids = [row['id_servico'] for row in s_results]
+    
     emp_cursor = db.execute('''
-        SELECT EM.nome, FE.designacao
+        SELECT EM.id_empregado, EM.nome, FE.designacao
         FROM DDL.Trabalha_Em TE
         JOIN DDL.Empregado EM ON TE.id_empregado = EM.id_empregado
         JOIN DDL.Funcao_Empregado FE ON EM.id_funcao_empregado = FE.id_funcao_empregado
         WHERE TE.id_evento = ?
     ''', (event_id,))
-    empregados = [{'nome': r['nome'], 'funcao': r['designacao']} for r in fetch_all(emp_cursor)]
+    empregados = [{'id': r['id_empregado'], 'nome': r['nome'], 'funcao': r['designacao']} for r in fetch_all(emp_cursor)]
 
     return {
         'id': e['id_evento'],
@@ -74,6 +77,7 @@ def get_event_by_id(event_id):
         'local': e['morada'],
         'menuId': e['id_menu'],
         'servicos': servs,
+        'servicos_ids': servs_ids,
         'empregados': empregados
     }
 
@@ -121,9 +125,20 @@ def get_tipos_evento():
 
 def get_servicos():
     db = get_db()
-    cursor = db.execute('SELECT descricao FROM DDL.Servico WHERE isdeleted = 0')
+    cursor = db.execute('SELECT id_servico, descricao FROM DDL.Servico WHERE isdeleted = 0')
     servs = fetch_all(cursor)
-    return [(row['descricao'], row['descricao']) for row in servs]
+    return [(row['id_servico'], row['descricao']) for row in servs]
+
+def get_empregados():
+    db = get_db()
+    cursor = db.execute('''
+        SELECT E.id_empregado, E.nome, FE.designacao as funcao
+        FROM DDL.Empregado E
+        JOIN DDL.Funcao_Empregado FE ON E.id_funcao_empregado = FE.id_funcao_empregado
+        WHERE E.isdeleted = 0
+    ''')
+    emps = fetch_all(cursor)
+    return [{'id': row['id_empregado'], 'nome': row['nome'], 'funcao': row['funcao']} for row in emps]
 
 def get_or_create_cliente(db, nome, nif, tipo, cp, localidade):
     cursor = db.execute('SELECT id_cliente FROM DDL.Cliente WHERE NIF = ?', (nif,))
@@ -163,52 +178,34 @@ def save_evento(db, form, event_id=None):
     if len(data_sql) == 16:
         data_sql += ':00'
     
+    servicos_ids = form['servicos']
+    servicos_str = ','.join(servicos_ids) if servicos_ids else ''
+    
     if event_id:
-        db.execute(
-            '''
-            UPDATE DDL.Evento
-            SET id_cliente = ?, id_menu = ?, id_tipo_evento = ?, morada = ?, data_evento = ?, nr_pessoas = ?
-            WHERE id_evento = ?
-            ''',
-            (
-                id_cliente,
-                int(form['menu_id']),
-                id_tipo_evento,
-                form['local'],
-                data_sql,
-                nr_pessoas,
-                int(event_id)
-            )
-        )
-        db.execute('UPDATE DDL.Servico_Evento SET isdeleted = 1 WHERE id_evento = ?', (int(event_id),))
+        db.execute('''
+            EXEC SP.sp_AtualizarEvento 
+                @id_evento = ?, @id_cliente = ?, @id_menu = ?, @id_tipo_evento = ?, 
+                @morada = ?, @codigo_postal = ?, @duracao = 1, @nr_pessoas = ?, 
+                @margem = 0, @localidade = ?, @data_evento = ?, @servicos = ?
+        ''', (int(event_id), id_cliente, int(form['menu_id']), id_tipo_evento, form['local'], form.get('cliente_cp', ''), nr_pessoas, form.get('cliente_localidade', ''), data_sql, servicos_str))
         db.commit()
         e_id = int(event_id)
     else:
-        db.execute(
-            '''
-            INSERT INTO DDL.Evento (id_cliente, id_menu, id_tipo_evento, morada, data_evento, nr_pessoas, duracao, custo, margem)
-            VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0)
-            ''',
-            (
-                id_cliente,
-                int(form['menu_id']),
-                id_tipo_evento,
-                form['local'],
-                data_sql,
-                nr_pessoas
-            )
-        )
+        db.execute('''
+            EXEC SP.sp_AdicionarEvento 
+                @id_cliente = ?, @id_menu = ?, @id_tipo_evento = ?, 
+                @morada = ?, @codigo_postal = ?, @duracao = 1, @nr_pessoas = ?, 
+                @margem = 0, @localidade = ?, @data_evento = ?, @servicos = ?
+        ''', (id_cliente, int(form['menu_id']), id_tipo_evento, form['local'], form.get('cliente_cp', ''), nr_pessoas, form.get('cliente_localidade', ''), data_sql, servicos_str))
         db.commit()
-        e_id = fetch_one(db.execute('SELECT @@IDENTITY AS id'))['id']
+        e_id = fetch_one(db.execute("SELECT IDENT_CURRENT('DDL.Evento') AS id"))['id']
 
-    for serv in form['servicos']:
-        id_serv = get_or_create_servico(db, serv)
-        cursor = db.execute('SELECT * FROM DDL.Servico_Evento WHERE id_evento = ? AND id_servico = ?', (e_id, id_serv))
-        if fetch_one(cursor):
-            db.execute('UPDATE DDL.Servico_Evento SET isdeleted = 0 WHERE id_evento = ? AND id_servico = ?', (e_id, id_serv))
-        else:
-            db.execute('INSERT INTO DDL.Servico_Evento (id_evento, id_servico) VALUES (?, ?)', (e_id, id_serv))
-    db.commit()
+    # Update Employees
+    db.execute('DELETE FROM DDL.Trabalha_Em WHERE id_evento = ?', (e_id,))
+    if form.get('empregados'):
+        for emp_id in form['empregados']:
+            db.execute('EXEC SP.sp_AdicionarEmpregadoAEvento @id_evento=?, @id_empregado=?', (e_id, int(emp_id)))
+        db.commit()
 
 def get_event_inventory(event_id):
     db = get_db()
@@ -220,49 +217,30 @@ def get_event_inventory(event_id):
     nr_pessoas = evento['nr_pessoas'] or 1
     menu_id = evento['id_menu']
 
-    pratos_cursor = db.execute('''
-        SELECT I.id_ingrediente, I.nome as ingrediente_nome, CP.quantidade
-        FROM DDL.Constituicao_Menu_Pratos CMP
-        JOIN DDL.Constituicao_Prato CP ON CMP.id_prato = CP.id_prato
-        JOIN DDL.Ingrediente I ON CP.id_ingrediente = I.id_ingrediente
-        WHERE CMP.id_menu = ? AND CMP.isdeleted = 0
-    ''', (menu_id,))
-    pratos_resultados = fetch_all(pratos_cursor)
+    cursor = db.execute('''
+        SELECT ingrediente, SUM(quantidade_necessaria) as total
+        FROM UDF.fn_IngredientesPorEvento(?)
+        GROUP BY ingrediente
+        ORDER BY ingrediente
+    ''', (event_id,))
     
-    bebidas_cursor = db.execute('''
-        SELECT I.id_ingrediente, I.nome as ingrediente_nome, CB.quantidade
-        FROM DDL.Constituicao_Menu_Bebidas CMB
-        JOIN DDL.Constituicao_Bebida CB ON CMB.id_bebida = CB.id_bebida
-        JOIN DDL.Ingrediente I ON CB.id_ingrediente = I.id_ingrediente
-        WHERE CMB.id_menu = ? AND CMB.isdeleted = 0
-    ''', (menu_id,))
-    bebidas_resultados = fetch_all(bebidas_cursor)
-
-    ingredientes = {}
+    resultados = fetch_all(cursor)
     
-    for r in pratos_resultados:
-        i_id = r['id_ingrediente']
-        if i_id not in ingredientes:
-            ingredientes[i_id] = {'nome': r['ingrediente_nome'], 'qtd_unitaria': 0}
-        ingredientes[i_id]['qtd_unitaria'] += (r['quantidade'] or 0)
-        
-    for r in bebidas_resultados:
-        i_id = r['id_ingrediente']
-        if i_id not in ingredientes:
-            ingredientes[i_id] = {'nome': r['ingrediente_nome'], 'qtd_unitaria': 0}
-        ingredientes[i_id]['qtd_unitaria'] += (r['quantidade'] or 0)
-        
     res = []
-    for k, v in ingredientes.items():
-        total = v['qtd_unitaria'] * nr_pessoas
+    for r in resultados:
+        # Calculate reverse unit quantity just for display purposes
+        qtd_unitaria = r['total'] / nr_pessoas if nr_pessoas > 0 else r['total']
+        
+        # Format the decimal to look nicer
+        qtd_unit_clean = int(qtd_unitaria) if qtd_unitaria % 1 == 0 else round(qtd_unitaria, 2)
+        total_clean = int(r['total']) if r['total'] % 1 == 0 else round(r['total'], 2)
+        
         res.append({
-            'id': k,
-            'nome': v['nome'],
-            'qtd_unitaria': v['qtd_unitaria'],
-            'total': total
+            'nome': r['ingrediente'],
+            'qtd_unitaria': qtd_unit_clean,
+            'total': total_clean
         })
         
-    res.sort(key=lambda x: x['nome'])
     return res
 
 def delete_evento(db, event_id):

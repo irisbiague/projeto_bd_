@@ -65,9 +65,9 @@ RETURN
 (
     SELECT 
         ev.id_evento,
-        p.nome AS prato,
+        p.nome AS item_menu,
         i.nome AS ingrediente,
-        cp.quantidade AS quantidade_necessaria
+        (cp.quantidade * ISNULL(ev.nr_pessoas, 1)) AS quantidade_necessaria
     FROM DDL.Evento ev
     INNER JOIN DDL.Menu m 
         ON ev.id_menu = m.id_menu
@@ -79,5 +79,25 @@ RETURN
         ON p.id_prato = cp.id_prato
     INNER JOIN DDL.Ingrediente i 
         ON cp.id_ingrediente = i.id_ingrediente
+    WHERE ev.id_evento = @id_evento
+
+    UNION ALL
+
+    SELECT 
+        ev.id_evento,
+        b.nome AS item_menu,
+        i.nome AS ingrediente,
+        (cb.quantidade * ISNULL(ev.nr_pessoas, 1)) AS quantidade_necessaria
+    FROM DDL.Evento ev
+    INNER JOIN DDL.Menu m 
+        ON ev.id_menu = m.id_menu
+    INNER JOIN DDL.Constituicao_Menu_Bebidas cmb 
+        ON m.id_menu = cmb.id_menu
+    INNER JOIN DDL.Bebida b 
+        ON cmb.id_bebida = b.id_bebida
+    INNER JOIN DDL.Constituicao_Bebida cb 
+        ON b.id_bebida = cb.id_bebida
+    INNER JOIN DDL.Ingrediente i 
+        ON cb.id_ingrediente = i.id_ingrediente
     WHERE ev.id_evento = @id_evento
 );

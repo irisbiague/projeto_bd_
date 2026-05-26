@@ -102,6 +102,19 @@
         </div>
       </div>
 
+      <div class="card">
+        <div class="section-title">4. Equipa Alocada (Empregados)</div>
+        <div class="service-grid">
+          {% for emp in empregados_list %}
+            <label class="service-card {% if emp.id|string in form.empregados %}service-card-selected{% endif %}" for="emp-{{ emp.id }}">
+              <input class="service-checkbox" id="emp-{{ emp.id }}" type="checkbox" name="empregados" value="{{ emp.id }}" {% if emp.id|string in form.empregados %}checked{% endif %} />
+              <span class="service-toggle">{% if emp.id|string in form.empregados %}✓{% endif %}</span>
+              <span class="service-text">{{ emp.nome }} <small style="color:#6B7280; display:block;">{{ emp.funcao }}</small></span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
       <div style="display:flex;justify-content:flex-end;margin-top:20px;padding-bottom:40px;">
         <button type="submit" class="button-primary">Confirmar e Agendar Evento</button>
       </div>
