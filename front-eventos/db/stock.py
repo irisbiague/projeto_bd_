@@ -12,12 +12,12 @@ def row_to_stock(row):
 
 def get_stock_items():
     db = get_db()
-    cursor = db.execute('SELECT * FROM DDL.Ingrediente WHERE isdeleted = 0 ORDER BY id_ingrediente DESC')
+    cursor = db.execute('SELECT * FROM VIEWS.V_Ingredientes_quantidade_custo ORDER BY id_ingrediente DESC')
     return [row_to_stock(row) for row in fetch_all(cursor)]
 
 def get_stock_item(item_id):
     db = get_db()
-    cursor = db.execute('SELECT * FROM DDL.Ingrediente WHERE id_ingrediente = ? AND isdeleted = 0', (item_id,))
+    cursor = db.execute('SELECT * FROM UDF.fn_IngredientesQuantidadeCustoPorId(?)', (item_id,))
     row = fetch_one(cursor)
     return row_to_stock(row) if row else None
 
