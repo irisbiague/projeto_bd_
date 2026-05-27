@@ -179,3 +179,32 @@ BEGIN
 
 END;
 GO
+
+CREATE PROCEDURE SP.sp_NovoLote 
+(
+    @id_ingrediente INT,
+    @id_fornecedor INT,
+    @preco DECIMAL(10,2),
+    @quantidade_deduzivel INT
+)
+AS
+BEGIN
+    INSERT INTO DDL.Lote
+    (
+        id_ingrediente,
+        id_fornecedor,
+        preco,
+        quantidade_deduzida,
+        quantidade_deduzivel
+    )
+    VALUES
+    (
+        @id_ingrediente,
+        @id_fornecedor,
+        @preco,
+        0,
+        @quantidade_deduzivel
+    );
+
+END;
+GO
