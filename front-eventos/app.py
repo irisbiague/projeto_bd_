@@ -8,7 +8,7 @@ from db.database import SQL_SERVER_CONFIG, set_db_config, get_db, fetch_all, clo
 from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servicos, get_empregados, save_evento, delete_evento as db_delete_evento, get_event_inventory
 from db.menus import (
     get_menus, get_menu_by_id, save_menu, delete_menu as db_delete_menu, categorias_catering,
-    get_todos_pratos, get_todas_bebidas, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida,
+    get_todos_pratos, get_todas_bebidas, get_ingredientes, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida,
     map_categoria_bd
 )
 from db.stock import get_stock_items, get_stock_item, save_stock_item, add_lote_item, stock_lotes
@@ -284,7 +284,7 @@ def manage_menus():
 @app.route('/manage-dishes', methods=['GET', 'POST'])
 def manage_dishes():
     message = None
-    form = {'id': '', 'tipo': 'prato', 'categoria': 'entradas', 'nome': '', 'receita': ''}
+    form = {'id': '', 'tipo': 'prato', 'categoria': 'entradas', 'nome': '', 'receita': '', 'ingredientes': []}
 
     if request.method == 'POST':
         form['id'] = request.form.get('id', '').strip()
@@ -293,14 +293,27 @@ def manage_dishes():
         form['nome'] = request.form.get('nome', '').strip()
         form['receita'] = request.form.get('receita', '').strip()
 
+        ingredient_ids = request.form.getlist('ingrediente_id')
+        ingredient_quantities = request.form.getlist('ingrediente_quantidade')
+        ingredientes = []
+        max_rows = max(len(ingredient_ids), len(ingredient_quantities))
+        for idx in range(max_rows):
+            ing_id = ingredient_ids[idx].strip() if idx < len(ingredient_ids) else ''
+            qty = ingredient_quantities[idx].strip() if idx < len(ingredient_quantities) else ''
+            if not ing_id or not qty:
+                continue
+            ingredientes.append({'id': ing_id, 'quantidade': qty})
+
+        form['ingredientes'] = ingredientes
+
         if not form['nome']:
             message = 'Por favor, indique um nome para o prato ou bebida.'
         else:
             db = get_db()
             if form['tipo'] == 'bebida':
-                save_bebida(db, form['id'], form['nome'], form['receita'])
+                save_bebida(db, form['id'], form['nome'], form['receita'], ingredientes)
             else:
-                save_prato(db, form['id'], form['nome'], form['receita'], form['categoria'])
+                save_prato(db, form['id'], form['nome'], form['receita'], form['categoria'], ingredientes)
             return redirect(url_for('manage_dishes', success=1))
 
     if request.args.get('success'):
@@ -308,6 +321,7 @@ def manage_dishes():
 
     pratos = get_todos_pratos()
     bebidas = get_todas_bebidas()
+    ingredients = get_ingredientes()
 
     pratos_por_categoria = {}
     for p in pratos:
@@ -321,7 +335,8 @@ def manage_dishes():
         form=form,
         categorias_catering=categorias_catering,
         pratos_por_categoria=pratos_por_categoria,
-        bebidas=bebidas
+        bebidas=bebidas,
+        ingredients=ingredients
     )
 
 

@@ -136,19 +136,102 @@ def get_todas_bebidas():
     ''')
     return fetch_all(cursor)
 
-def save_prato(db, prato_id, nome, receita, categoria):
+
+def get_ingredientes():
+    db = get_db()
+    cursor = db.execute('''
+        SELECT id_ingrediente, nome, unidade
+        FROM DDL.Ingrediente
+        WHERE isdeleted = 0
+        ORDER BY nome
+    ''')
+    return fetch_all(cursor)
+
+
+def _normalize_ingredientes(ingredientes):
+    normalized = {}
+    if isinstance(ingredientes, str):
+        values = [value.strip() for value in ingredientes.split(',') if value.strip()]
+        for value in values:
+            if not value.isdigit():
+                continue
+            ingrediente_id = int(value)
+            normalized[ingrediente_id] = normalized.get(ingrediente_id, 0) + 1
+
+    elif isinstance(ingredientes, list):
+        for item in ingredientes:
+            if not item:
+                continue
+
+            if isinstance(item, dict):
+                raw_id = item.get('id') or item.get('id_ingrediente') or item.get('ingrediente_id')
+                raw_qty = item.get('quantidade') or item.get('quantidade_necessaria')
+            elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                raw_id, raw_qty = item[0], item[1]
+            else:
+                continue
+
+            if raw_id is None or raw_qty is None:
+                continue
+
+            ingrediente_id = str(raw_id).strip()
+            quantidade = str(raw_qty).strip()
+            if not ingrediente_id.isdigit() or not quantidade.isdigit():
+                continue
+
+            ingrediente_id = int(ingrediente_id)
+            quantidade = int(quantidade)
+            if quantidade <= 0:
+                continue
+
+            normalized[ingrediente_id] = normalized.get(ingrediente_id, 0) + quantidade
+
+    return [{'id': ingrediente_id, 'quantidade': quantidade} for ingrediente_id, quantidade in normalized.items()]
+
+
+def save_prato(db, prato_id, nome, receita, categoria, ingredientes=None):
     tp_id = get_or_create_tipo_prato(db, categoria)
     if prato_id and prato_id.isdigit():
         db.execute('UPDATE DDL.Prato SET nome = ?, receita = ?, id_tipo_prato = ? WHERE id_prato = ?', (nome, receita, tp_id, int(prato_id)))
+        prato_id = int(prato_id)
     else:
         db.execute('INSERT INTO DDL.Prato (id_tipo_prato, nome, receita) VALUES (?, ?, ?)', (tp_id, nome, receita))
+        db.commit()
+        cursor = db.execute('SELECT @@IDENTITY AS id')
+        prato_id = fetch_one(cursor)['id']
+
+    if ingredientes is not None:
+        db.execute('UPDATE DDL.Constituicao_Prato SET isdeleted = 1 WHERE id_prato = ?', (prato_id,))
+        normalized_ingredientes = _normalize_ingredientes(ingredientes)
+        for item in normalized_ingredientes:
+            db.execute(
+                'INSERT INTO DDL.Constituicao_Prato (id_prato, id_ingrediente, quantidade) VALUES (?, ?, ?)',
+                (prato_id, item['id'], item['quantidade'])
+            )
+
     db.commit()
 
-def save_bebida(db, bebida_id, nome, receita):
+
+def save_bebida(db, bebida_id, nome, receita, ingredientes=None):
     if bebida_id and bebida_id.isdigit():
         db.execute('UPDATE DDL.Bebida SET nome = ?, receita = ? WHERE id_bebida = ?', (nome, receita, int(bebida_id)))
+        bebida_id = int(bebida_id)
     else:
         db.execute('INSERT INTO DDL.Bebida (nome, receita) VALUES (?, ?)', (nome, receita))
+        db.commit()
+        cursor = db.execute('SELECT @@IDENTITY AS id')
+        bebida_id = fetch_one(cursor)['id']
+
+    if ingredientes is not None:
+        db.execute('UPDATE DDL.Constituicao_Bebida SET isdeleted = 1 WHERE id_bebida = ?', (bebida_id,))
+        for item in ingredientes:
+            if not item.get('id') or not item.get('quantidade'):
+                continue
+            db.execute(
+                'INSERT INTO DDL.Constituicao_Bebida (id_bebida, id_ingrediente, quantidade) VALUES (?, ?, ?)',
+                (bebida_id, int(item['id']), int(item['quantidade']))
+            )
+
     db.commit()
 
 def delete_prato(db, prato_id):

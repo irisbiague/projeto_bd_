@@ -35,6 +35,37 @@
             <input class="input-field" name="nome" type="text" placeholder="Ex: Lombo Assado" value="{{ form.nome|default('') }}" />
           </div>
           <div style="grid-column: 1 / -1;">
+            <label class="input-label">Ingredientes</label>
+            <div id="ingredientsContainer">
+              {% if form.ingredientes %}
+                {% for ing in form.ingredientes %}
+                  <div class="ingredient-row" style="display:grid;grid-template-columns:1fr 120px 40px;gap:10px;margin-bottom:10px;align-items:center;">
+                    <select class="input-field" name="ingrediente_id">
+                      <option value="">Selecionar ingrediente</option>
+                      {% for ingredient in ingredients %}
+                        <option value="{{ ingredient.id_ingrediente }}" {% if ing.id == ingredient.id_ingrediente|string %}selected{% endif %}>{{ ingredient.nome }}{% if ingredient.unidade %} ({{ ingredient.unidade }}){% endif %}</option>
+                      {% endfor %}
+                    </select>
+                    <input class="input-field" type="number" min="1" name="ingrediente_quantidade" placeholder="Qtd" value="{{ ing.quantidade|default('') }}" />
+                    <button type="button" onclick="removeIngredientRow(this)" class="button-secondary" style="padding:0 10px;">×</button>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="ingredient-row" style="display:grid;grid-template-columns:1fr 120px 40px;gap:10px;margin-bottom:10px;align-items:center;">
+                  <select class="input-field" name="ingrediente_id">
+                    <option value="">Selecionar ingrediente</option>
+                    {% for ingredient in ingredients %}
+                      <option value="{{ ingredient.id_ingrediente }}">{{ ingredient.nome }}{% if ingredient.unidade %} ({{ ingredient.unidade }}){% endif %}</option>
+                    {% endfor %}
+                  </select>
+                  <input class="input-field" type="number" min="1" name="ingrediente_quantidade" placeholder="Qtd" />
+                  <button type="button" onclick="removeIngredientRow(this)" class="button-secondary" style="padding:0 10px;">×</button>
+                </div>
+              {% endif %}
+            </div>
+            <button type="button" class="button-secondary" onclick="addIngredientRow()" style="margin-top:8px;">Adicionar ingrediente</button>
+          </div>
+          <div style="grid-column: 1 / -1;">
             <label class="input-label">Ingredientes / Receita (Opcional)</label>
             <textarea class="input-textarea" name="receita" placeholder="Ex: Batata, Azeite...">{{ form.receita|default('') }}</textarea>
           </div>
@@ -105,6 +136,8 @@
   </div>
 
   <script>
+    const ingredientOptions = {{ ingredients|tojson|safe }};
+
     function toggleCategoria() {
       var tipo = document.getElementById("tipoSelect").value;
       var catContainer = document.getElementById("categoriaContainer");
@@ -128,6 +161,63 @@
           row.style.display = "none";
         }
       });
+    }
+
+    function createIngredientRow(selectedId, quantity) {
+      var container = document.createElement('div');
+      container.className = 'ingredient-row';
+      container.style.cssText = 'display:grid;grid-template-columns:1fr 120px 40px;gap:10px;margin-bottom:10px;align-items:center;';
+
+      var select = document.createElement('select');
+      select.className = 'input-field';
+      select.name = 'ingrediente_id';
+      var defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = 'Selecionar ingrediente';
+      select.appendChild(defaultOption);
+      ingredientOptions.forEach(function(item) {
+        var option = document.createElement('option');
+        option.value = item.id_ingrediente;
+        option.textContent = item.nome + (item.unidade ? ' (' + item.unidade + ')' : '');
+        if (selectedId && selectedId === String(item.id_ingrediente)) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+
+      var input = document.createElement('input');
+      input.className = 'input-field';
+      input.type = 'number';
+      input.min = '1';
+      input.name = 'ingrediente_quantidade';
+      input.placeholder = 'Qtd';
+      if (quantity) {
+        input.value = quantity;
+      }
+
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'button-secondary';
+      button.style.padding = '0 10px';
+      button.textContent = '×';
+      button.onclick = function() { removeIngredientRow(button); };
+
+      container.appendChild(select);
+      container.appendChild(input);
+      container.appendChild(button);
+      return container;
+    }
+
+    function addIngredientRow() {
+      var container = document.getElementById('ingredientsContainer');
+      container.appendChild(createIngredientRow('', ''));
+    }
+
+    function removeIngredientRow(button) {
+      var row = button.closest('.ingredient-row');
+      if (row) {
+        row.remove();
+      }
     }
   </script>
 {% endblock %}
