@@ -95,8 +95,17 @@ CREATE OR ALTER PROCEDURE SP.sp_AdicionarEmpregadoAEvento
 AS
 BEGIN
 
+    DECLARE @duracao INT = 0;
+
+    SET @duracao = (
+        SELECT duracao 
+        FROM DDL.Evento 
+        WHERE id_evento = @id_evento AND isdeleted = 0
+    );
+
     INSERT INTO DDL.Trabalha_Em (id_empregado, id_evento, duracao)
-    VALUES (@id_empregado, @id_evento, 0);
+    VALUES (@id_empregado, @id_evento, @duracao + 4); 
+    -- Adiciona 4 horas por cada empregado para cobrir preparação e limpeza
 
 END;
 GO
