@@ -184,7 +184,7 @@ def save_evento(db, form, event_id=None):
     db.execute('DELETE FROM DDL.Trabalha_Em WHERE id_evento = ?', (e_id,))
     if form.get('empregados'):
         for emp_id in form['empregados']:
-            db.execute('EXEC SP.sp_AdicionarEmpregadoAEvento @id_evento=?, @id_empregado=?', (e_id, int(emp_id)))
+            db.execute('INSERT INTO DDL.Trabalha_Em (id_empregado, id_evento, duracao) VALUES (?, ?, 1)', (int(emp_id), e_id))
         db.commit()
 
 def get_event_inventory(event_id):

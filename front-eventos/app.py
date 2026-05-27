@@ -170,10 +170,18 @@ def create_event():
 
         if not form['cliente'] or not form['cliente_nif'] or not form['data'] or not form['local'] or not form['menu_id']:
             message = 'Por favor, preencha o cliente, NIF, data, local e escolha um menu.'
+        elif not form['cliente_nif'].isdigit() or len(form['cliente_nif']) != 9:
+            message = 'O NIF deve conter exactamente 9 dígitos numéricos.'
         else:
-            db = get_db()
-            save_evento(db, form, event_id)
-            return redirect(url_for('create_event', success=1))
+            try:
+                db = get_db()
+                save_evento(db, form, event_id)
+                return redirect(url_for('create_event', success=1))
+            except pyodbc.IntegrityError as e:
+                if 'CHK_Cliente_NIF' in str(e):
+                    message = 'NIF inválido: o NIF introduzido não é válido. Verifique o valor e tente novamente.'
+                else:
+                    raise
 
     else:
         edit_id = request.args.get('edit_id')
