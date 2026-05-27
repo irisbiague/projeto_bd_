@@ -161,4 +161,16 @@ RETURN
 );
 GO
 
+CREATE FUNCTION UDF.fn_LotesDetalhadosPorIngrediente (@id_ingrediente INT)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT L.id_lote, L.preco, L.quantidade_deduzivel, L.quantidade_deduzida, L.id_fornecedor, F.nome as fornecedor_nome
+    FROM DDL.Lote L
+        INNER JOIN DDL.Fornecedor F 
+            ON L.id_fornecedor = F.id_fornecedor
+        WHERE L.id_ingrediente = @id_ingrediente AND L.isdeleted = 0          
+);
+
 
