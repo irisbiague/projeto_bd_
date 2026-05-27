@@ -14,7 +14,7 @@ BEGIN
     )
     BEGIN
         RAISERROR(
-            'N�o � poss�vel eliminar o ingrediente porque ainda existem lotes por consumir.',
+            'Não é possível eliminar o ingrediente porque ainda existem lotes por consumir.',
             16,
             1
         )
