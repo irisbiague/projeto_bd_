@@ -320,10 +320,10 @@ CREATE TABLE DDL.Ingrediente (
 -- Lote
 CREATE TABLE DDL.Lote (
     id_lote                 INT IDENTITY PRIMARY KEY,
-    id_ingrediente          INT,
-    id_fornecedor           INT,
+    id_ingrediente          INT NOT NULL,
+    id_fornecedor           INT NOT NULL,
     preco                   DECIMAL(10,2),
-    quantidade_deduzida     INT,
+    quantidade_deduzida     INT DEFAULT 0,
     quantidade_deduzivel    INT,
     isdeleted				INT DEFAULT 0,
 
