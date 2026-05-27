@@ -45,7 +45,7 @@ def get_event_by_id(event_id):
     emp_cursor = db.execute('''
         SELECT * FROM UDF.fn_EmpregadosPorEvento(?)
     ''', (event_id,))
-    empregados = [{'id': r['id_empregado'], 'nome': r['nome'], 'funcao': r['designacao']} for r in fetch_all(emp_cursor)]
+    empregados = [{'id': r['id_empregado'], 'nome': r['nome'], 'funcao': r.get('funcao') or r.get('designacao', '')} for r in fetch_all(emp_cursor)]
 
     return {
         'id': e['id_evento'],

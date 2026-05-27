@@ -1,5 +1,5 @@
  -- Criar view para listar os eventos com o nome do cliente e a descrição do tipo de evento
-CREATE VIEW VIEWS.V_Eventos_Detalhados
+CREATE OR ALTER VIEW VIEWS.V_Eventos_Detalhados
 AS
 SELECT E.*, 
     C.nome as cliente_nome, 
@@ -12,7 +12,7 @@ FROM DDL.Evento E
 WHERE E.isdeleted = 0;
 GO
 
-CREATE VIEW VIEWS.V_Empregados_Evento
+CREATE OR ALTER VIEW VIEWS.V_Empregados_Evento
 AS
 SELECT 
     E.id_empregado, 
@@ -24,7 +24,7 @@ FROM DDL.Empregado E
 WHERE E.isdeleted = 0;
 GO
 
-CREATE VIEW VIEWS.V_Ingredientes_quantidade_custo
+CREATE OR ALTER VIEW VIEWS.V_Ingredientes_quantidade_custo
 AS
 SELECT
     I.id_ingrediente,
@@ -45,7 +45,7 @@ GROUP BY
     I.data_validade;
 GO
 
-CREATE VIEW VIEWS.V_Lotes_Detalhados
+CREATE OR ALTER VIEW VIEWS.V_Lotes_Detalhados
 AS
 SELECT L.id_lote, L.preco, L.quantidade_deduzivel, L.quantidade_deduzida, L.id_fornecedor, F.nome as fornecedor_nome
         FROM DDL.Lote L

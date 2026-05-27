@@ -270,6 +270,45 @@ textarea {
   background: #FFFFFF;
 }
 
+/* Botão azul — Editar */
+.button-edit {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.button-edit:hover {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+}
+
+/* Botão verde — Adicionar lote */
+.button-add {
+  background: #F0FDF4;
+  color: #15803D;
+  border: 1px solid #BBF7D0;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.button-add:hover {
+  background: #DCFCE7;
+  border-color: #86EFAC;
+}
+
+/* Botão vermelho — Remover */
+.button-danger {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.button-danger:hover {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+}
+
 .service-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

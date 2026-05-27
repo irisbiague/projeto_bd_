@@ -1,7 +1,7 @@
 USE Projeto;
 GO
 
-CREATE FUNCTION UDF.fn_CalcularCustoEvento (@id_evento INT)
+CREATE OR ALTER FUNCTION UDF.fn_CalcularCustoEvento (@id_evento INT)
 RETURNS DECIMAL(10,2)
 AS
 BEGIN
@@ -58,7 +58,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION UDF.fn_IngredientesPorEvento (@id_evento INT)
+CREATE OR ALTER FUNCTION UDF.fn_IngredientesPorEvento (@id_evento INT)
 RETURNS TABLE
 AS
 RETURN
@@ -103,7 +103,7 @@ RETURN
 );
 GO
 
-CREATE FUNCTION UDF.fn_ServicosPorEvento (@id_evento INT)
+CREATE OR ALTER FUNCTION UDF.fn_ServicosPorEvento (@id_evento INT)
 RETURNS TABLE
 AS
 RETURN
@@ -118,7 +118,7 @@ RETURN
 );
 GO
 
-CREATE FUNCTION UDF.fn_EventoPorId (@id_evento INT)
+CREATE OR ALTER FUNCTION UDF.fn_EventoPorId (@id_evento INT)
 RETURNS TABLE
 AS
 RETURN
@@ -139,18 +139,20 @@ RETURN
 );
 GO
 
-CREATE FUNCTION UDF.fn_EmpregadosPorEvento (@id_evento INT)
+CREATE OR ALTER FUNCTION UDF.fn_EmpregadosPorEvento (@id_evento INT)
 RETURNS TABLE
 AS
 RETURN
 (
-    SELECT * 
-    FROM VIEWS.V_Empregados_Evento
-    WHERE TE.id_evento = @id_evento
+    SELECT V.* FROM VIEWS.V_Empregados_Evento V
+    INNER JOIN DDL.Trabalha_Em TE 
+        ON V.id_empregado = TE.id_empregado
+    WHERE TE.id_evento = @id_evento 
+      AND TE.isdeleted = 0
 );
 GO
 
-CREATE FUNCTION UDF.fn_IngredientesQuantidadeCustoPorId (@id_ingrediente INT)
+CREATE OR ALTER FUNCTION UDF.fn_IngredientesQuantidadeCustoPorId (@id_ingrediente INT)
 RETURNS TABLE
 AS
 RETURN
@@ -161,7 +163,7 @@ RETURN
 );
 GO
 
-CREATE FUNCTION UDF.fn_LotesDetalhadosPorIngrediente (@id_ingrediente INT)
+CREATE OR ALTER FUNCTION UDF.fn_LotesDetalhadosPorIngrediente (@id_ingrediente INT)
 RETURNS TABLE
 AS
 RETURN
@@ -172,5 +174,4 @@ RETURN
             ON L.id_fornecedor = F.id_fornecedor
         WHERE L.id_ingrediente = @id_ingrediente AND L.isdeleted = 0          
 );
-
-
+GO

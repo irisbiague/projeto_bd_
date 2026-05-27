@@ -1,4 +1,4 @@
-CREATE TRIGGER DDL.trg_ImpedirDeleteIngrediente
+CREATE OR ALTER TRIGGER DDL.trg_ImpedirDeleteIngrediente
 ON DDL.Ingrediente
 INSTEAD OF DELETE
 AS
@@ -33,7 +33,7 @@ BEGIN
 END;
 GO
 
-CREATE TRIGGER DDL.trg_SoftDeleteMenu
+CREATE OR ALTER TRIGGER DDL.trg_SoftDeleteMenu
 ON DDL.Menu
 INSTEAD OF DELETE
 AS
@@ -58,7 +58,7 @@ BEGIN
 END;
 GO
 
-CREATE TRIGGER DDL.trg_SoftDeletePrato
+CREATE OR ALTER TRIGGER DDL.trg_SoftDeletePrato
 ON DDL.Prato
 INSTEAD OF DELETE
 AS
@@ -83,7 +83,7 @@ BEGIN
 END;
 GO
 
-CREATE TRIGGER DDL.trg_DeleteServico
+CREATE OR ALTER TRIGGER DDL.trg_DeleteServico
 ON DDL.Servico
 INSTEAD OF DELETE
 AS

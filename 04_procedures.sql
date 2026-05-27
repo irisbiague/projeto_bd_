@@ -1,7 +1,7 @@
 USE Projeto;
 GO
 
-CREATE PROCEDURE SP.sp_AdicionarEvento
+CREATE OR ALTER PROCEDURE SP.sp_AdicionarEvento
 (
     @id_cliente INT,
     @id_menu INT,
@@ -87,7 +87,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE SP.sp_AdicionarEmpregadoAEvento
+CREATE OR ALTER PROCEDURE SP.sp_AdicionarEmpregadoAEvento
 (
     @id_evento INT,
     @id_empregado INT
@@ -101,7 +101,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE SP.sp_AtualizarEvento
+CREATE OR ALTER PROCEDURE SP.sp_AtualizarEvento
 (
     @id_evento INT,
     @id_cliente INT,
@@ -180,7 +180,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE SP.sp_NovoLote 
+CREATE OR ALTER PROCEDURE SP.sp_NovoLote 
 (
     @id_ingrediente INT,
     @id_fornecedor INT,

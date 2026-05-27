@@ -1,21 +1,63 @@
-DROP DATABASE Projeto;
 -- script usado para a BD Local
-CREATE DATABASE Projeto;
+IF DB_ID('Projeto') IS NULL
+BEGIN
+    CREATE DATABASE Projeto;
+END
 GO
 USE Projeto;
 GO
 
 -- script para a BD da aula
-CREATE SCHEMA DDL;
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'DDL')
+BEGIN
+    EXEC('CREATE SCHEMA DDL');
+END
 GO
 
-CREATE SCHEMA UDF;
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'UDF')
+BEGIN
+    EXEC('CREATE SCHEMA UDF');
+END
 GO
 
-CREATE SCHEMA SP;
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'SP')
+BEGIN
+    EXEC('CREATE SCHEMA SP');
+END
 GO
 
-CREATE SCHEMA VIEWS;
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'VIEWS')
+BEGIN
+    EXEC('CREATE SCHEMA VIEWS');
+END
+GO
+
+-- Eliminar tabelas caso já existam (ordem inversa de criação para respeitar FKs)
+DROP TABLE IF EXISTS DDL.Constituicao_Bebida;
+DROP TABLE IF EXISTS DDL.Constituicao_Prato;
+DROP TABLE IF EXISTS DDL.Constituicao_Menu_Bebidas;
+DROP TABLE IF EXISTS DDL.Constituicao_Menu_Pratos;
+DROP TABLE IF EXISTS DDL.Prato;
+DROP TABLE IF EXISTS DDL.Tipo_Prato;
+DROP TABLE IF EXISTS DDL.Bebida;
+DROP TABLE IF EXISTS DDL.Tipo_Bebida;
+DROP TABLE IF EXISTS DDL.Lote;
+DROP TABLE IF EXISTS DDL.Ingrediente;
+DROP TABLE IF EXISTS DDL.Subtipo_Ingrediente;
+DROP TABLE IF EXISTS DDL.Tipo_Ingrediente;
+DROP TABLE IF EXISTS DDL.Servico_Evento;
+DROP TABLE IF EXISTS DDL.Servico_Externo;
+DROP TABLE IF EXISTS DDL.Fornecedor;
+DROP TABLE IF EXISTS DDL.Servico_Interno;
+DROP TABLE IF EXISTS DDL.Servico;
+DROP TABLE IF EXISTS DDL.Trabalha_Em;
+DROP TABLE IF EXISTS DDL.Empregado;
+DROP TABLE IF EXISTS DDL.Funcao_Empregado;
+DROP TABLE IF EXISTS DDL.Evento;
+DROP TABLE IF EXISTS DDL.Menu;
+DROP TABLE IF EXISTS DDL.Tipo_Menu;
+DROP TABLE IF EXISTS DDL.Tipo_evento;
+DROP TABLE IF EXISTS DDL.Cliente;
 GO
 
 -- Cliente
@@ -305,6 +347,8 @@ CREATE TABLE DDL.Ingrediente (
     data_validade               DATE,    
     nome                        VARCHAR(100),
 	unidade						VARCHAR(5),
+	quantidade                  INT,
+    custo                       DECIMAL(10,2),
     isdeleted                   INT DEFAULT 0,
 
     FOREIGN KEY (id_subtipo_ingrediente)

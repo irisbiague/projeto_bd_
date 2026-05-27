@@ -86,11 +86,11 @@
                 <td style="vertical-align:middle; text-align:center;">{{ item.unidade }}</td>
                 <td style="vertical-align:middle; text-align:center;">{{ item.custo }} €</td>
                 <td style="vertical-align:middle; text-align:center;">{{ item.data_validade }}</td>
-                <td class="stock-actions" style="vertical-align:middle; text-align:right; display:flex; gap:8px; align-items:center;">
-                  <a class="button-secondary" href="{{ url_for('stock', edit_id=item.id) }}">Editar</a>
-                  <button type="button" class="button-secondary" data-id="{{ item.id }}" data-name="{{ item.nome }}" onclick="openLoteModal(this)">Adicionar lote</button>
+                <td class="stock-actions">
+                  <a class="button-secondary button-edit" href="{{ url_for('stock', edit_id=item.id) }}">Editar</a>
+                  <button type="button" class="button-secondary button-add" data-id="{{ item.id }}" data-name="{{ item.nome }}" onclick="openLoteModal(this)">Adicionar lote</button>
                   <form method="post" action="{{ url_for('delete_stock', item_id=item.id) }}" style="display:inline;">
-                    <button type="submit" class="button-secondary">Remover</button>
+                    <button type="submit" class="button-secondary button-danger">Remover</button>
                   </form>
                 </td>
               </tr>
