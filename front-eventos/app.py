@@ -2,16 +2,16 @@
 import json
 import pyodbc
 from datetime import date, datetime
-from flask import Flask, g, redirect, render_template, request, session, url_for
+from flask import Flask, g, redirect, render_template, request, session, url_for, jsonify
 
-from db.database import SQL_SERVER_CONFIG, set_db_config, get_db, close_db, build_connection_string, init_db
+from db.database import SQL_SERVER_CONFIG, set_db_config, get_db, fetch_all, close_db, build_connection_string, init_db
 from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servicos, get_empregados, save_evento, delete_evento as db_delete_evento, get_event_inventory
 from db.menus import (
     get_menus, get_menu_by_id, save_menu, delete_menu as db_delete_menu, categorias_catering,
     get_todos_pratos, get_todas_bebidas, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida,
     map_categoria_bd
 )
-from db.stock import get_stock_items, get_stock_item, save_stock_item, delete_stock_item
+from db.stock import get_stock_items, get_stock_item, save_stock_item, add_lote_item, stock_lotes
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = 'mudar-isto-para-uma-chave-secreta'
@@ -409,6 +409,49 @@ def event_inventory(event_id):
     )
 
 
+@app.route('/stock/lotes/<int:ingredient_id>')
+def stock_lotes_route(ingredient_id):
+    rows = stock_lotes(ingredient_id)
+    return jsonify(rows)
+
+
+@app.route('/stock/lote/edit', methods=['POST'])
+def stock_edit_lote():
+    id_lote = request.form.get('id_lote') or request.json.get('id_lote') if request.is_json else None
+    if not id_lote or not str(id_lote).isdigit():
+        return jsonify({'success': False, 'error': 'ID de lote inválido'}), 400
+    preco = request.form.get('preco')
+    quantidade_deduzivel = request.form.get('quantidade_deduzivel')
+    quantidade_deduzida = request.form.get('quantidade_deduzida', '0')
+    fornecedor_id = request.form.get('fornecedor_id')
+
+    if not preco or not preco.replace('.', '', 1).isdigit():
+        return jsonify({'success': False, 'error': 'Preço inválido'}), 400
+    if not quantidade_deduzivel or not str(quantidade_deduzivel).isdigit():
+        return jsonify({'success': False, 'error': 'Quantidade inválida'}), 400
+
+    fornecedor = int(fornecedor_id) if fornecedor_id and fornecedor_id.isdigit() else None
+    db = get_db()
+    from db.stock import edit_lote_item
+    success, err = edit_lote_item(db, int(id_lote), fornecedor, float(preco), int(quantidade_deduzivel), int(quantidade_deduzida))
+    if not success:
+        return jsonify({'success': False, 'error': err}), 500
+    return jsonify({'success': True})
+
+
+@app.route('/stock/lote/delete', methods=['POST'])
+def stock_delete_lote():
+    id_lote = request.form.get('id_lote') or (request.get_json() or {}).get('id_lote')
+    if not id_lote or not str(id_lote).isdigit():
+        return jsonify({'success': False, 'error': 'ID de lote inválido'}), 400
+    db = get_db()
+    from db.stock import delete_lote_item
+    success, err = delete_lote_item(db, int(id_lote))
+    if not success:
+        return jsonify({'success': False, 'error': err}), 500
+    return jsonify({'success': True})
+
+
 @app.route('/stock', methods=['GET', 'POST'])
 def stock():
     message = None
@@ -422,25 +465,47 @@ def stock():
     editing_item = None
 
     if request.method == 'POST':
-        item_id = request.form.get('item_id')
-        input_id = request.form.get('input_id', '').strip()
-        
-        form['nome'] = request.form.get('nome', '').strip()
-        form['quantidade'] = request.form.get('quantidade', '').strip()
-        form['unidade'] = request.form.get('unidade', '').strip()
-        form['custo'] = request.form.get('custo', '').strip()
-        form['data_validade'] = request.form.get('data_validade', '').strip()
-        form['input_id'] = input_id
+        action = request.form.get('action')
+        if action == 'add_lote':
+            ingredient_id = request.form.get('ingredient_id', '').strip()
+            fornecedor_id = request.form.get('fornecedor_id', '').strip()
+            preco = request.form.get('preco', '').strip()
+            quantidade_deduzivel = request.form.get('quantidade_deduzivel', '').strip()
 
-        if not form['nome'] and not input_id:
-            message = 'Por favor, indique o nome do ingrediente ou insira o seu ID.'
-        else:
-            db = get_db()
-            success, err_msg = save_stock_item(db, item_id, input_id, form)
-            if not success:
-                message = err_msg
+            if not ingredient_id.isdigit():
+                message = 'ID de ingrediente inválido.'
+            elif not quantidade_deduzivel.isdigit():
+                message = 'Por favor, indique uma quantidade válida para o lote.'
+            elif not preco or not preco.replace('.', '', 1).isdigit():
+                message = 'Por favor, indique um preço válido para o lote.'
             else:
-                return redirect(url_for('stock', success=1))
+                fornecedor = int(fornecedor_id) if fornecedor_id.isdigit() else None
+                db = get_db()
+                success, err_msg = add_lote_item(db, int(ingredient_id), fornecedor, float(preco), int(quantidade_deduzivel))
+                if not success:
+                    message = err_msg
+                else:
+                    return redirect(url_for('stock', success=1))
+        else:
+            item_id = request.form.get('item_id')
+            input_id = request.form.get('input_id', '').strip()
+            
+            form['nome'] = request.form.get('nome', '').strip()
+            form['quantidade'] = request.form.get('quantidade', '').strip()
+            form['unidade'] = request.form.get('unidade', '').strip()
+            form['custo'] = request.form.get('custo', '').strip()
+            form['data_validade'] = request.form.get('data_validade', '').strip()
+            form['input_id'] = input_id
+
+            if not form['nome'] and not input_id:
+                message = 'Por favor, indique o nome do ingrediente ou insira o seu ID.'
+            else:
+                db = get_db()
+                success, err_msg = save_stock_item(db, item_id, input_id, form)
+                if not success:
+                    message = err_msg
+                else:
+                    return redirect(url_for('stock', success=1))
 
     edit_id = request.args.get('edit_id')
     if edit_id and edit_id.isdigit():

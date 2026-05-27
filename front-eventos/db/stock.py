@@ -17,72 +17,122 @@ def get_stock_items():
 
 def get_stock_item(item_id):
     db = get_db()
-    cursor = db.execute('SELECT * FROM UDF.fn_IngredientesQuantidadeCustoPorId(?)', (item_id,))
+    cursor = db.execute('SELECT * FROM VIEWS.V_Ingredientes_quantidade_custo WHERE id_ingrediente = ?', (item_id,))
     row = fetch_one(cursor)
     return row_to_stock(row) if row else None
 
 def save_stock_item(db, item_id, input_id, form):
+    quantity = int(form['quantidade']) if form['quantidade'].isdigit() else 0
+    price = float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else None
+    validade = form['data_validade'] if form['data_validade'] else None
+
     if item_id and item_id.isdigit():
+        ingredient_id = int(item_id)
         db.execute(
             '''
             UPDATE DDL.Ingrediente
-            SET nome = ?, quantidade = ?, unidade = ?, custo = ?, data_validade = ?
+            SET nome = ?, unidade = ?, data_validade = ?
             WHERE id_ingrediente = ?
             ''',
             (
                 form['nome'],
-                int(form['quantidade']) if form['quantidade'].isdigit() else 0,
                 form['unidade'],
-                float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else 0.0,
-                form['data_validade'] if form['data_validade'] else None,
-                int(item_id)
+                validade,
+                ingredient_id
             )
         )
         db.commit()
         return True, None
-        
+
     elif input_id and input_id.isdigit():
         target_id = int(input_id)
         existing = get_stock_item(target_id)
         if not existing:
             return False, f'Erro: Não existe nenhum produto no stock com o ID {target_id}. Deixe o ID em branco para criar um novo.'
-        else:
-            add_qtd = int(form['quantidade']) if form['quantidade'].isdigit() else 0
-            new_qtd = existing['quantidade'] + add_qtd
-            
-            new_nome = form['nome'] if form['nome'] else existing['nome']
-            new_unidade = form['unidade'] if form['unidade'] else existing['unidade']
-            new_custo = float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else existing['custo']
-            new_validade = form['data_validade'] if form['data_validade'] else existing['data_validade']
 
-            db.execute(
-                '''
-                UPDATE DDL.Ingrediente
-                SET nome = ?, quantidade = ?, unidade = ?, custo = ?, data_validade = ?
-                WHERE id_ingrediente = ?
-                ''',
-                (new_nome, new_qtd, new_unidade, new_custo, new_validade, target_id)
-            )
-            db.commit()
-            return True, None
-            
-    else:
+        new_nome = form['nome'] if form['nome'] else existing['nome']
+        new_unidade = form['unidade'] if form['unidade'] else existing['unidade']
+        new_validade = form['data_validade'] if form['data_validade'] else existing['data_validade']
+
         db.execute(
             '''
-            INSERT INTO DDL.Ingrediente (nome, quantidade, unidade, custo, data_validade)
-            VALUES (?, ?, ?, ?, ?)
+            UPDATE DDL.Ingrediente
+            SET nome = ?, unidade = ?, data_validade = ?
+            WHERE id_ingrediente = ?
+            ''',
+            (new_nome, new_unidade, new_validade, target_id)
+        )
+
+        if quantity > 0:
+            if price is None:
+                return False, 'Por favor, indique um custo válido para adicionar um lote.'
+            db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (target_id, None, price, quantity))
+        db.commit()
+        return True, None
+            
+    else:
+        cursor = db.execute(
+            '''
+            INSERT INTO DDL.Ingrediente (nome, unidade, data_validade)
+            VALUES (?, ?, ?)
             ''',
             (
                 form['nome'],
-                int(form['quantidade']) if form['quantidade'].isdigit() else 0,
                 form['unidade'],
-                float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else 0.0,
-                form['data_validade'] if form['data_validade'] else None
+                validade
             )
         )
+        cursor = db.execute('SELECT CAST(SCOPE_IDENTITY() AS INT) AS id')
+        ingredient_id = cursor.fetchone()[0]
+
+        if quantity > 0:
+            if price is None:
+                return False, 'Por favor, indique um custo válido para criar o lote.'
+            db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (ingredient_id, None, price, quantity))
+
         db.commit()
         return True, None
 
-def delete_stock_item(db, item_id):
-    db.execute('UPDATE DDL.Ingrediente SET isdeleted = 1 WHERE id_ingrediente = ?', (item_id,))
-    db.commit()
+
+def add_lote_item(db, ingredient_id, fornecedor_id, preco, quantidade_deduzivel):
+    try:
+        db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (ingredient_id, fornecedor_id, preco, quantidade_deduzivel))
+        db.commit()
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
+
+def edit_lote_item(db, id_lote, fornecedor_id, preco, quantidade_deduzivel, quantidade_deduzida=0):
+    try:
+        db.execute(
+            '''
+            UPDATE DDL.Lote
+            SET preco = ?, quantidade_deduzivel = ?, quantidade_deduzida = ?, id_fornecedor = ?
+            WHERE id_lote = ?
+            ''',
+            (preco, quantidade_deduzivel, quantidade_deduzida, fornecedor_id, id_lote)
+        )
+        db.commit()
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
+
+def delete_lote_item(db, id_lote):
+    try:
+        db.execute('UPDATE DDL.Lote SET isdeleted = 1 WHERE id_lote = ?', (id_lote,))
+        db.commit()
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
+
+
+def stock_lotes(ingredient_id):
+    db = get_db()
+    cursor = db.execute('''
+        SELECT *
+        FROM UDF.fn_LotesDetalhadosPorIngrediente(?)        
+        ORDER BY id_lote DESC
+    ''', (ingredient_id,))
+    return fetch_all(cursor)
+
+
