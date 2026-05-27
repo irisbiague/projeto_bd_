@@ -44,3 +44,15 @@ GROUP BY
     I.unidade,
     I.data_validade;
 GO
+
+CREATE VIEW VIEWS.V_Lotes_Detalhados
+AS
+SELECT L.id_lote, L.preco, L.quantidade_deduzivel, L.quantidade_deduzida, L.id_fornecedor, F.nome as fornecedor_nome
+        FROM DDL.Lote L
+        LEFT JOIN DDL.Fornecedor F ON L.id_fornecedor = F.id_fornecedor
+        WHERE L.isdeleted = 0;
+GO
+
+SELECT * FROM DDL.Lote;
+SELECT * FROM DDL.Ingrediente;
+SELECT * FROM DDL.Fornecedor;
