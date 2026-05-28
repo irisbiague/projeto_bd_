@@ -16,14 +16,16 @@
         {% endif %}
         <input type="hidden" name="action" value="save" />
         <div class="section-title">{{ 'Editar item de stock' if editing_item else 'Adicionar novo item de stock' }}</div>
-        
-        {% if not editing_item %}
-          <div style="margin-bottom: 20px; background: #F3F4F6; padding: 15px; border-radius: 8px;">
-            <label class="input-label" style="color: #374151;">ID do Ingrediente (Opcional)</label>
-            <input class="input-field" name="input_id" type="number" placeholder="Ex: 5" value="{{ stock_form.input_id|default('') }}" style="max-width: 250px; background: #FFF;" />
-            <p style="font-size:13px;color:#6B7280;margin-top:6px;margin-bottom:0;"><strong>Atenção:</strong> Se não inserir nenhum ID, será criado um produto novo no stock. Se inserir o ID de um produto existente, a base de dados apenas irá atualizar e incrementar a quantidade desse produto correspondente.</p>
-          </div>
-        {% endif %}
+
+        <div style="margin-bottom: 20px; background: #F3F4F6; padding: 15px; border-radius: 8px;">
+          <p style="font-size:13px;color:#6B7280;margin-top:6px;margin-bottom:0;">
+            {% if editing_item %}
+              Atualize os dados do ingrediente existente ou, se quiser ajustar a quantidade, adicione um novo lote com a quantidade e custo desejados.
+            {% else %}
+              Preencha os dados abaixo para adicionar um novo ingrediente ao stock. Só são permitidas criações de novos ingredientes.
+            {% endif %}
+          </p>
+        </div>
 
         <div class="grid-2">
           <div>
@@ -37,6 +39,15 @@
           <div>
             <label class="input-label">Unidade</label>
             <input class="input-field" name="unidade" type="text" placeholder="Ex: Kg" value="{{ stock_form.unidade|default('') }}" />
+          </div>
+          <div>
+            <label class="input-label">Fornecedor</label>
+            <select class="input-field" name="fornecedor_id" required>
+              <option value="">Selecionar fornecedor</option>
+              {% for fornecedor in fornecedores %}
+                <option value="{{ fornecedor.id_fornecedor }}" {% if stock_form.fornecedor_id == fornecedor.id_fornecedor|string %}selected{% endif %}>{{ fornecedor.nome }}</option>
+              {% endfor %}
+            </select>
           </div>
           <div>
             <label class="input-label">Custo (€)</label>

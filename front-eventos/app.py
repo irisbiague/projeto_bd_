@@ -11,7 +11,7 @@ from db.menus import (
     get_todos_pratos, get_todas_bebidas, get_ingredientes, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida,
     map_categoria_bd
 )
-from db.stock import get_stock_items, get_stock_item, save_stock_item, add_lote_item, stock_lotes
+from db.stock import get_stock_items, get_stock_item, save_stock_item, update_stock_item, add_lote_item, stock_lotes, get_fornecedores
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = 'mudar-isto-para-uma-chave-secreta'
@@ -478,14 +478,15 @@ def stock_delete_lote():
 @app.route('/stock', methods=['GET', 'POST'])
 def stock():
     message = None
+    editing_item = None
     form = {
         'nome': '',
         'quantidade': '',
         'unidade': '',
         'custo': '',
-        'data_validade': ''
+        'data_validade': '',
+        'fornecedor_id': ''
     }
-    editing_item = None
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -511,24 +512,22 @@ def stock():
                     return redirect(url_for('stock', success=1))
         else:
             item_id = request.form.get('item_id')
-            input_id = request.form.get('input_id', '').strip()
-            
             form['nome'] = request.form.get('nome', '').strip()
             form['quantidade'] = request.form.get('quantidade', '').strip()
             form['unidade'] = request.form.get('unidade', '').strip()
             form['custo'] = request.form.get('custo', '').strip()
             form['data_validade'] = request.form.get('data_validade', '').strip()
-            form['input_id'] = input_id
+            form['fornecedor_id'] = request.form.get('fornecedor_id', '').strip()
 
-            if not form['nome'] and not input_id:
-                message = 'Por favor, indique o nome do ingrediente ou insira o seu ID.'
+            db = get_db()
+            if item_id and item_id.isdigit():
+                success, err_msg = update_stock_item(db, int(item_id), form)
             else:
-                db = get_db()
-                success, err_msg = save_stock_item(db, item_id, input_id, form)
-                if not success:
-                    message = err_msg
-                else:
-                    return redirect(url_for('stock', success=1))
+                success, err_msg = save_stock_item(db, form)
+            if not success:
+                message = err_msg
+            else:
+                return redirect(url_for('stock', success=1))
 
     edit_id = request.args.get('edit_id')
     if edit_id and edit_id.isdigit():
@@ -539,19 +538,22 @@ def stock():
                 'quantidade': editing_item['quantidade'],
                 'unidade': editing_item['unidade'],
                 'custo': editing_item['custo'],
-                'data_validade': editing_item['data_validade']
+                'data_validade': editing_item['data_validade'],
+                'fornecedor_id': editing_item.get('fornecedor_id', '')
             }
 
     if request.args.get('success'):
         message = 'Stock atualizado com sucesso!'
 
     stock_items = get_stock_items()
+    fornecedores = get_fornecedores()
     return render_template(
         'stock.html',
         active_page='stock',
         message=message,
         stock_items=stock_items,
         stock_form=form,
+        fornecedores=fornecedores,
         editing_item=editing_item
     )
 

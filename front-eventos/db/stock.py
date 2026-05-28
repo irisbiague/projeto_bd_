@@ -21,80 +21,99 @@ def get_stock_item(item_id):
     row = fetch_one(cursor)
     return row_to_stock(row) if row else None
 
-def save_stock_item(db, item_id, input_id, form):
+def get_fornecedores():
+    db = get_db()
+    cursor = db.execute('SELECT id_fornecedor, nome FROM DDL.Fornecedor WHERE isdeleted = 0 ORDER BY nome')
+    return fetch_all(cursor)
+
+
+def save_stock_item(db, form):
     quantity = int(form['quantidade']) if form['quantidade'].isdigit() else 0
     price = float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else None
     validade = form['data_validade'] if form['data_validade'] else None
+    fornecedor_id = int(form['fornecedor_id']) if form.get('fornecedor_id') and form['fornecedor_id'].isdigit() else None
 
-    if item_id and item_id.isdigit():
-        ingredient_id = int(item_id)
-        db.execute(
-            '''
-            UPDATE DDL.Ingrediente
-            SET nome = ?, unidade = ?, data_validade = ?
-            WHERE id_ingrediente = ?
-            ''',
-            (
-                form['nome'],
-                form['unidade'],
-                validade,
-                ingredient_id
-            )
+    if not form['nome']:
+        return False, 'Por favor, indique o nome do ingrediente.'
+    if fornecedor_id is None:
+        return False, 'Por favor, selecione um fornecedor.'
+
+    cursor = db.cursor()
+    cursor.execute(
+        '''
+        INSERT INTO DDL.Ingrediente (id_fornecedor, nome, unidade, data_validade)
+        OUTPUT INSERTED.id_ingrediente
+        VALUES (?, ?, ?, ?)
+        ''',
+        (
+            fornecedor_id,
+            form['nome'],
+            form['unidade'],
+            validade
         )
-        db.commit()
-        return True, None
+    )
+    row = cursor.fetchone()
+    if not row or row[0] is None:
+        db.rollback()
+        return False, 'Erro interno: não foi possível criar o ingrediente.'
 
-    elif input_id and input_id.isdigit():
-        target_id = int(input_id)
-        existing = get_stock_item(target_id)
-        if not existing:
-            return False, f'Erro: Não existe nenhum produto no stock com o ID {target_id}. Deixe o ID em branco para criar um novo.'
+    ingredient_id = row[0]
 
-        new_nome = form['nome'] if form['nome'] else existing['nome']
-        new_unidade = form['unidade'] if form['unidade'] else existing['unidade']
-        new_validade = form['data_validade'] if form['data_validade'] else existing['data_validade']
+    if quantity > 0:
+        if price is None:
+            db.rollback()
+            return False, 'Por favor, indique um custo válido para criar o lote.'
+        db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (ingredient_id, fornecedor_id, price, quantity))
 
-        db.execute(
-            '''
-            UPDATE DDL.Ingrediente
-            SET nome = ?, unidade = ?, data_validade = ?
-            WHERE id_ingrediente = ?
-            ''',
-            (new_nome, new_unidade, new_validade, target_id)
+    db.commit()
+    return True, None
+
+
+def update_stock_item(db, item_id, form):
+    quantity = int(form['quantidade']) if form['quantidade'].isdigit() else 0
+    price = float(form['custo']) if form['custo'].replace('.', '', 1).isdigit() else None
+    validade = form['data_validade'] if form['data_validade'] else None
+    fornecedor_id = int(form['fornecedor_id']) if form.get('fornecedor_id') and form['fornecedor_id'].isdigit() else None
+
+    if not form['nome']:
+        return False, 'Por favor, indique o nome do ingrediente.'
+    if fornecedor_id is None:
+        return False, 'Por favor, selecione um fornecedor.'
+
+    cursor = db.execute('SELECT 1 FROM DDL.Ingrediente WHERE id_ingrediente = ?', (item_id,))
+    if cursor.fetchone() is None:
+        return False, f'Ingrediente com ID {item_id} não existe.'
+
+    db.execute(
+        '''
+        UPDATE DDL.Ingrediente
+        SET nome = ?, unidade = ?, data_validade = ?, id_fornecedor = ?
+        WHERE id_ingrediente = ?
+        ''',
+        (
+            form['nome'],
+            form['unidade'],
+            validade,
+            fornecedor_id,
+            item_id
         )
+    )
 
-        if quantity > 0:
-            if price is None:
-                return False, 'Por favor, indique um custo válido para adicionar um lote.'
-            db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (target_id, None, price, quantity))
-        db.commit()
-        return True, None
-            
-    else:
-        cursor = db.execute(
-            '''
-            INSERT INTO DDL.Ingrediente (nome, unidade, data_validade)
-            VALUES (?, ?, ?)
-            ''',
-            (
-                form['nome'],
-                form['unidade'],
-                validade
-            )
-        )
-        cursor = db.execute('SELECT CAST(SCOPE_IDENTITY() AS INT) AS id')
-        ingredient_id = cursor.fetchone()[0]
+    if quantity > 0:
+        if price is None:
+            db.rollback()
+            return False, 'Por favor, indique um custo válido para criar o lote.'
+        db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (item_id, fornecedor_id, price, quantity))
 
-        if quantity > 0:
-            if price is None:
-                return False, 'Por favor, indique um custo válido para criar o lote.'
-            db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (ingredient_id, None, price, quantity))
-
-        db.commit()
-        return True, None
+    db.commit()
+    return True, None
 
 
 def add_lote_item(db, ingredient_id, fornecedor_id, preco, quantidade_deduzivel):
+    cursor = db.execute('SELECT 1 FROM DDL.Ingrediente WHERE id_ingrediente = ?', (ingredient_id,))
+    if cursor.fetchone() is None:
+        return False, f'Ingrediente com ID {ingredient_id} não existe.'
+
     try:
         db.execute('EXEC SP.sp_NovoLote ?, ?, ?, ?', (ingredient_id, fornecedor_id, preco, quantidade_deduzivel))
         db.commit()
@@ -124,7 +143,6 @@ def delete_lote_item(db, id_lote):
         return True, None
     except Exception as exc:
         return False, str(exc)
-
 
 def stock_lotes(ingredient_id):
     db = get_db()

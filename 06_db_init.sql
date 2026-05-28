@@ -12,7 +12,7 @@ VALUES
 (N'Empresa',    N'915678901', N'321654987', N'Rua Industrial 9',     N'4710-250', N'Braga',            N'Tech Solutions'),
 (N'Particular', N'916789012', N'741852963', N'Rua Nova 15',          N'4800-300', N'Guimarães',        N'Pedro Fernandes'),
 (N'Particular', N'917890123', N'159357486', N'Rua Verde 2',          N'4900-500', N'Viana do Castelo', N'Inês Ribeiro'),
-(N'Empresa',    N'918901234', N'258369147', N'Zona Empresarial',      N'3800-120', N'Aveiro',           N'Atlantic Corp'),
+(N'Empresa',    N'918901234', N'258369147', N'Zona Empresarial',     N'3800-120', N'Aveiro',           N'Atlantic Corp'),
 (N'Particular', N'919012345', N'951753852', N'Rua do Monte 90',      N'5000-200', N'Vila Real',        N'Rita Lopes');
 
 -- =========================
@@ -138,16 +138,16 @@ VALUES
 -- =========================
 -- INGREDIENTES
 -- =========================
-INSERT INTO DDL.Ingrediente (id_subtipo_ingrediente, id_fornecedor, data_validade, quantidade, custo, nome)
+INSERT INTO DDL.Ingrediente (id_subtipo_ingrediente, id_fornecedor, data_validade, unidade, nome)
 VALUES
-(1, 1, '2026-12-31', 50, 250.00, N'Carne de Vaca'),
-(2, 1, '2026-10-15', 80, 180.00, N'Peito de Frango'),
-(3, 3, '2026-08-20',100,  90.00, N'Cenoura'),
-(4, 2, '2027-01-01',200, 120.00, N'Coca-Cola'),
-(5, 3, '2026-09-10', 40,  75.00, N'Queijo Flamengo'),
-(6, 4, '2026-11-20', 60, 320.00, N'Salmão Fresco'),
-(7, 5, '2026-07-30', 90,  50.00, N'Laranja'),
-(8, 1, '2026-12-01', 70, 210.00, N'Carne de Porco');
+(1, 1, '2026-12-31', N'kg', N'Carne de Vaca'),
+(2, 1, '2026-10-15', N'kg', N'Peito de Frango'),
+(3, 3, '2026-08-20', N'kg', N'Cenoura'),
+(4, 2, '2027-01-01', N'litro', N'Coca-Cola'),
+(5, 3, '2026-09-10', N'kg', N'Queijo Flamengo'),
+(6, 4, '2026-11-20', N'kg', N'Salmão Fresco'),
+(7, 5, '2026-07-30', N'kg', N'Laranja'),
+(8, 1, '2026-12-01', N'kg', N'Carne de Porco');
 
 -- =========================
 -- LOTES
