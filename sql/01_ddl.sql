@@ -127,7 +127,7 @@ CREATE TABLE DDL.Menu (
 
 -- Evento
 CREATE TABLE DDL.Evento (
-    id_evento       INT IDENTITY PRIMARY KEY,
+    id_evento       INT IDENTITY PRIMARY KEY NONCLUSTERED,
     id_cliente      INT NOT NULL,
     id_menu         INT NOT NULL,
     id_tipo_evento  INT NOT NULL,

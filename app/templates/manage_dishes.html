@@ -94,11 +94,12 @@
                     <div>
                       <div style="font-weight:700;">{{ p.nome }}</div>
                       {% if p.receita %}
-                        <div style="font-size:13px;color:#6B7280;">{{ p.receita }}</div>
+                        <div style="font-size:13px;color:#6B7280;">{{ p.receita|truncate(50) }}</div>
                       {% endif %}
                     </div>
-                    <div>
-                      <form method="post" action="{{ url_for('delete_prato', prato_id=p.id_prato) }}" onsubmit="return confirm('Tem a certeza?');">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                      <button type="button" class="button-secondary" onclick="showDishDetails('prato', {{ p.id_prato }})" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;">Ver Detalhes</button>
+                      <form method="post" action="{{ url_for('delete_prato', prato_id=p.id_prato) }}" onsubmit="return confirm('Tem a certeza?');" style="margin:0;">
                         <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
                       </form>
                     </div>
@@ -119,11 +120,12 @@
                 <div>
                   <div style="font-weight:700;">{{ b.nome }}</div>
                   {% if b.receita %}
-                    <div style="font-size:13px;color:#6B7280;">{{ b.receita }}</div>
+                    <div style="font-size:13px;color:#6B7280;">{{ b.receita|truncate(50) }}</div>
                   {% endif %}
                 </div>
-                <div>
-                  <form method="post" action="{{ url_for('delete_bebida', bebida_id=b.id_bebida) }}" onsubmit="return confirm('Tem a certeza?');">
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <button type="button" class="button-secondary" onclick="showDishDetails('bebida', {{ b.id_bebida }})" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;">Ver Detalhes</button>
+                  <form method="post" action="{{ url_for('delete_bebida', bebida_id=b.id_bebida) }}" onsubmit="return confirm('Tem a certeza?');" style="margin:0;">
                     <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
                   </form>
                 </div>
@@ -133,9 +135,71 @@
         </div>
       {% endif %}
     </div>
+
+    <!-- Modal de Detalhes -->
+    <div id="dishModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:white; padding:25px; border-radius:12px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E5E7EB; padding-bottom:10px; margin-bottom:15px;">
+          <h2 id="modalTitle" style="margin:0; color:#1F2937;">Detalhes</h2>
+          <button type="button" onclick="closeDishModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#6B7280;">&times;</button>
+        </div>
+        <div style="margin-bottom:15px;">
+          <div style="font-size:12px; font-weight:700; color:#6B7280; text-transform:uppercase; margin-bottom:5px;">Categoria</div>
+          <div id="modalCategory" style="color:#111827;"></div>
+        </div>
+        <div style="margin-bottom:15px;">
+          <div style="font-size:12px; font-weight:700; color:#6B7280; text-transform:uppercase; margin-bottom:5px;">Receita / Descrição</div>
+          <div id="modalRecipe" style="color:#111827; white-space:pre-wrap;"></div>
+        </div>
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#6B7280; text-transform:uppercase; margin-bottom:5px;">Ingredientes</div>
+          <ul id="modalIngredients" style="margin:0; padding-left:20px; color:#111827;">
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
+    function showDishDetails(tipo, id) {
+      fetch('/api/dish/' + tipo + '/' + id)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById('modalTitle').textContent = data.data.nome;
+            document.getElementById('modalCategory').textContent = data.data.categoria || 'N/A';
+            document.getElementById('modalRecipe').textContent = data.data.receita || 'Sem descrição';
+            
+            const ul = document.getElementById('modalIngredients');
+            ul.innerHTML = '';
+            if (data.data.ingredientes && data.data.ingredientes.length > 0) {
+              data.data.ingredientes.forEach(ing => {
+                const li = document.createElement('li');
+                li.textContent = ing.quantidade + ' ' + (ing.unidade || 'unidade(s)') + ' de ' + ing.nome;
+                ul.appendChild(li);
+              });
+            } else {
+              const li = document.createElement('li');
+              li.textContent = 'Sem ingredientes registados.';
+              li.style.color = '#6B7280';
+              ul.appendChild(li);
+            }
+            
+            document.getElementById('dishModal').style.display = 'flex';
+          } else {
+            alert('Erro: ' + data.error);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert('Erro ao carregar detalhes.');
+        });
+    }
+
+    function closeDishModal() {
+      document.getElementById('dishModal').style.display = 'none';
+    }
+
     const ingredientOptions = {{ ingredients|tojson|safe }};
 
     function toggleCategoria() {

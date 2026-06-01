@@ -236,8 +236,63 @@ def save_bebida(db, bebida_id, nome, receita, ingredientes=None):
 
 def delete_prato(db, prato_id):
     db.execute('UPDATE DDL.Prato SET isdeleted = 1 WHERE id_prato = ?', (prato_id,))
+    db.execute('UPDATE DDL.Constituicao_Prato SET isdeleted = 1 WHERE id_prato = ?', (prato_id,))
     db.commit()
 
 def delete_bebida(db, bebida_id):
     db.execute('UPDATE DDL.Bebida SET isdeleted = 1 WHERE id_bebida = ?', (bebida_id,))
+    db.execute('UPDATE DDL.Constituicao_Bebida SET isdeleted = 1 WHERE id_bebida = ?', (bebida_id,))
     db.commit()
+
+def get_prato_details(prato_id):
+    db = get_db()
+    cursor = db.execute('''
+        SELECT P.nome, P.receita, TP.designacao as categoria
+        FROM DDL.Prato P
+        JOIN DDL.Tipo_Prato TP ON P.id_tipo_prato = TP.id_tipo_prato
+        WHERE P.id_prato = ? AND P.isdeleted = 0
+    ''', (prato_id,))
+    prato = fetch_one(cursor)
+    if not prato:
+        return None
+        
+    cursor = db.execute('''
+        SELECT I.nome, I.unidade, CP.quantidade
+        FROM DDL.Constituicao_Prato CP
+        JOIN DDL.Ingrediente I ON CP.id_ingrediente = I.id_ingrediente
+        WHERE CP.id_prato = ? AND CP.isdeleted = 0 AND I.isdeleted = 0
+    ''', (prato_id,))
+    ingredientes = fetch_all(cursor)
+    
+    return {
+        'nome': prato['nome'],
+        'receita': prato['receita'],
+        'categoria': prato['categoria'],
+        'ingredientes': [{'nome': i['nome'], 'unidade': i['unidade'], 'quantidade': i['quantidade']} for i in ingredientes]
+    }
+
+def get_bebida_details(bebida_id):
+    db = get_db()
+    cursor = db.execute('''
+        SELECT B.nome, B.receita
+        FROM DDL.Bebida B
+        WHERE B.id_bebida = ? AND B.isdeleted = 0
+    ''', (bebida_id,))
+    bebida = fetch_one(cursor)
+    if not bebida:
+        return None
+        
+    cursor = db.execute('''
+        SELECT I.nome, I.unidade, CB.quantidade
+        FROM DDL.Constituicao_Bebida CB
+        JOIN DDL.Ingrediente I ON CB.id_ingrediente = I.id_ingrediente
+        WHERE CB.id_bebida = ? AND CB.isdeleted = 0 AND I.isdeleted = 0
+    ''', (bebida_id,))
+    ingredientes = fetch_all(cursor)
+    
+    return {
+        'nome': bebida['nome'],
+        'receita': bebida['receita'],
+        'categoria': 'Bebida',
+        'ingredientes': [{'nome': i['nome'], 'unidade': i['unidade'], 'quantidade': i['quantidade']} for i in ingredientes]
+    }

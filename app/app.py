@@ -9,7 +9,7 @@ from db.eventos import get_events, get_event_by_id, get_tipos_evento, get_servic
 from db.menus import (
     get_menus, get_menu_by_id, save_menu, delete_menu as db_delete_menu, categorias_catering,
     get_todos_pratos, get_todas_bebidas, get_ingredientes, save_prato, save_bebida, delete_prato as db_delete_prato, delete_bebida as db_delete_bebida,
-    map_categoria_bd
+    map_categoria_bd, get_prato_details, get_bebida_details
 )
 from db.stock import get_stock_items, get_stock_item, save_stock_item, update_stock_item, add_lote_item, stock_lotes, get_fornecedores
 
@@ -589,6 +589,19 @@ def delete_event(event_id):
     db_delete_evento(db, event_id)
     return redirect(url_for('events'))
 
+@app.route('/api/dish/<tipo>/<int:item_id>', methods=['GET'])
+def api_dish_details(tipo, item_id):
+    if tipo == 'prato':
+        details = get_prato_details(item_id)
+    elif tipo == 'bebida':
+        details = get_bebida_details(item_id)
+    else:
+        return jsonify({'success': False, 'error': 'Tipo inválido'}), 400
+        
+    if details:
+        return jsonify({'success': True, 'data': details})
+    else:
+        return jsonify({'success': False, 'error': 'Artigo não encontrado'}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
