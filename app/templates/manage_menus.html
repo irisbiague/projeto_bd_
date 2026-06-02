@@ -20,7 +20,7 @@
           <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div class="section-title" style="margin-bottom:0;">{{ cat.titulo }}</div>
-              <a href="{{ url_for('manage_dishes') }}" class="button-secondary" style="font-size:12px; padding:4px 8px;">Criar Novo</a>
+              <a href="{{ url_for('dishes.manage_dishes') }}" class="button-secondary" style="font-size:12px; padding:4px 8px;">Criar Novo</a>
             </div>
             <div style="margin-top:15px;">
               <label class="input-label">Escolher do Catálogo</label>
@@ -42,7 +42,7 @@
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:20px;padding-bottom:40px;gap:10px;">
         {% if editing_menu %}
-          <a href="{{ url_for('manage_menus') }}" class="button-secondary">Cancelar</a>
+          <a href="{{ url_for('menus.manage_menus') }}" class="button-secondary">Cancelar</a>
         {% endif %}
         <button type="submit" class="button-primary">{{ 'Guardar Alterações' if editing_menu else 'Guardar Menu' }}</button>
       </div>
@@ -60,8 +60,8 @@
           <div class="menu-card-header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
             <h3>{{ menu.nome }}</h3>
             <div style="display:flex;gap:8px;align-items:center;">
-              <a href="{{ url_for('manage_menus', edit_id=menu.id) }}" class="button-secondary" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;">Editar</a>
-              <form method="post" action="{{ url_for('delete_menu', menu_id=menu.id) }}" onsubmit="return confirm('Tem a certeza que quer apagar este menu?');">
+              <a href="{{ url_for('menus.manage_menus', edit_id=menu.id) }}" class="button-secondary" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;">Editar</a>
+              <form method="post" action="{{ url_for('menus.delete_menu', menu_id=menu.id) }}" onsubmit="return confirm('Tem a certeza que quer apagar este menu?');">
                 <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
               </form>
             </div>
