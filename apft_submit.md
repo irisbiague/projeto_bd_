@@ -58,6 +58,7 @@ Foram efetuadas as seguintes alterações:
 * Criação da tabela **Constituicao_Menu_Bebidas**.
 * Remoção do atributo **custo** da entidade **Ingrediente**.
 * Adição do atributo **data** à entidade **Evento**.
+* Adição do atributo **isdeleted** a todas as entidades.
 
 **Nota:** As tabelas **Constituicao_Menu_Pratos** e **Constituicao_Menu_Bebidas** não foram criadas na APFE devido a um lapso.
 
