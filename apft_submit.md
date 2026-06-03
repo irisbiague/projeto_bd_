@@ -4,28 +4,6 @@
 - Íris Biaguê, MEC: 119251
 - Tiago Ferreira, MEC: 78106
 
-# Instructions - TO REMOVE
-
-Este template é flexível.
-É sugerido seguir a estrutura, links de ficheiros e imagens, mas adicione conteúdo sempre que achar necessário.
-
----
-
-This template is flexible.
-It is suggested to follow the structure, file links and images but add more content where necessary.
-
-The files should be organized with the following nomenclature:
-
-- sql\01_ddl.sql: mandatory for DDL
-- sql\02_sp_functions.sql: mandatory for Store Procedure, Functions,... 
-- sql\03_triggers.sql: mandatory for triggers
-- sql\04_db_init.sql: scripts to init the database (i.e. inserts etc.)
-- sql\05_any_other_matter.sql: any other scripts.
-
-Por favor remova esta secção antes de submeter.
-
-Please remove this section before submitting.
-
 ## Introdução / Introduction
  
 O projeto consiste no desenvolvimento de uma base de dados para a **gestão de uma empresa de Catering**. O sistema visa centralizar e organizar toda a informação referente à planificação e execução de eventos, integrando a gestão de clientes, a alocação de recursos humanos e a estruturação detalhada de menus. O objetivo principal é otimizar a logística e garantir que cada evento tenha os recursos necessários sem desperdícios.
@@ -56,28 +34,53 @@ Os Requisitos Não Funcionais descrevem as restrições e as qualidades técnica
 
 ### Versão final/Final version
 
-![DER Diagram!](/imagens/DER.jpeg "DER")
+![DER Diagram!](/imagens/DER.png "DER")
 
 
 ### Melhorias/Improvements 
+Foram efetuadas as seguintes alterações:
 
-Descreva sumariamente as melhorias sobre a entrega anterior.
-Describe briefly the improvements made since the previous delivery.
+* Substituição da nota que indicava que todas as entidades possuem os atributos **"Criado em"** e **"Modificado em"** pela indicação de que todas as entidades possuem o atributo **"isdeleted"**.
+* Retificação da obrigatoriedade na relação entre as entidades **Evento** e **Menu**.
+* Remoção do atributo **custo** da entidade **Ingrediente**.
+* Remoção da obrigatoriedade, em ambos os sentidos, na relação entre as entidades **Ingrediente** e **Fornecedor**, de forma a facilitar os *inserts*.
+* Remoção da obrigatoriedade de um **Ingrediente** possuir um **Lote**, também com o objetivo de facilitar os *inserts*.
 
 ## ER - Esquema Relacional/Relational Schema
 
 ### Versão final/Final Version
-
 ![ER Diagram!](er.jpg "AnImage")
 
 ### Melhorias/Improvements
+Foram efetuadas as seguintes alterações:
 
-Descreva sumariamente as melhorias sobre a entrega anterior.
-Describe briefly the improvements made since the previous delivery.
+* Criação da tabela **Constituicao_Menu_Pratos**.
+* Criação da tabela **Constituicao_Menu_Bebidas**.
+* Remoção do atributo **custo** da entidade **Ingrediente**.
+* Adição do atributo **data** à entidade **Evento**.
+
+**Nota:** As tabelas **Constituicao_Menu_Pratos** e **Constituicao_Menu_Bebidas** não foram criadas na APFE devido a um lapso.
+
 
 ## ​SQL DDL - Data Definition Language
 
 [SQL DDL File](sql/01_ddl.sql "SQLFileQuestion")
+
+Foram efetuadas as seguintes retificações ao DDL:
+
+* Criação das tabelas **DDL.Constituicao_Menu_Pratos** e **DDL.Constituicao_Menu_Bebidas**.
+* Criação dos *schemas*:
+  * **DDL**
+  * **SP**
+  * **UDF**
+  * **VIEWS**
+* Criação de várias restrições por tabela, assegurando coerência com o DER.
+* Colocação das tabelas no *schema* **DDL**.
+* Adição do atributo **isDeleted** a todas as tabelas.
+
+Foi criado um ficheiro *diff* para explicar as alterações efetuadas ao DDL.
+
+[SQL DDL File alteration](01_ddl_alteracoes.diff "SQLFileQuestion")
 
 ## SQL DML - Data Manipulation Language
 
@@ -186,7 +189,7 @@ Para garantir a integridade dos dados e minimizar a redundância, a base de dado
 
 ## Índices/Indexes
 
-Para otimizar o desempenho do sistema, aplicámos diversas estratégias de indexação documentadas no script `sql/07_indexes.sql`:
+Para otimizar o desempenho do sistema, aplicámos diversas estratégias de indexação documentadas no script `sql/05_any_other_matter.sql`:
 
 1. **Índices Non-Clustered nas Foreign Keys (FKs):** O SQL Server não indexa FKs por omissão. Como a aplicação depende fortemente de agregações (JOINs) – especialmente ligadas aos Eventos –, criámos índices nas chaves estrangeiras das tabelas principais.
 ```sql
@@ -215,23 +218,21 @@ CREATE CLUSTERED INDEX CIX_Evento_DataEvento ON DDL.Evento(data_evento);
 
 A lógica de programação da base de dados encontra-se estruturada nos seguintes ficheiros:
 
-- [SQL Views File](sql/02_views.sql "SQLFileQuestion")
-- [SQL UDFs File](sql/03_udfs.sql "SQLFileQuestion")
-- [SQL Procedures File](sql/04_procedures.sql "SQLFileQuestion")
-- [SQL Triggers File](sql/05_triggers.sql "SQLFileQuestion")
-- [SQL Indexes File](sql/07_indexes.sql "SQLFileQuestion")
+[SQL SPs and Functions File](sql/02_sp_functions.sql "SQLFileQuestion")
+
+[SQL Triggers File](sql/03_triggers.sql "SQLFileQuestion")
 
 ## Outras notas/Other notes
 
 ### Dados iniciais da dabase de dados/Database init data
 
-[SQL DB Init File](sql/06_db_init.sql "SQLFileQuestion")
+[SQL DB Init File](sql/04_db_init.sql "SQLFileQuestion")
 
 ### Apresentação
 
 [Slides](slides.pdf "Slides")
 
-[Video](https://elearning.ua.pt/pluginfile.php/55992/mod_label/intro/VideoTrabalho2013.mp4)
+[Video](Gravação_demo.mp4 "Gravação")
 
 
 

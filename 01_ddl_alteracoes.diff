@@ -1,0 +1,361 @@
+1d0
+< DROP DATABASE Projeto;
+3c2,5
+< CREATE DATABASE Projeto;
+---
+> IF DB_ID('Projeto') IS NULL
+> BEGIN
+>     CREATE DATABASE Projeto;
+> END
+9c11,61
+< CREATE SCHEMA Projeto;
+---
+> IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'DDL')
+> BEGIN
+>     EXEC('CREATE SCHEMA DDL');
+> END
+> GO
+> 
+> IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'UDF')
+> BEGIN
+>     EXEC('CREATE SCHEMA UDF');
+> END
+> GO
+> 
+> IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'SP')
+> BEGIN
+>     EXEC('CREATE SCHEMA SP');
+> END
+> GO
+> 
+> IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'VIEWS')
+> BEGIN
+>     EXEC('CREATE SCHEMA VIEWS');
+> END
+> GO
+> 
+> -- Eliminar tabelas caso jÃ¡ existam (ordem inversa de criaÃ§Ã£o para respeitar FKs)
+> DROP TABLE IF EXISTS DDL.Constituicao_Bebida;
+> DROP TABLE IF EXISTS DDL.Constituicao_Prato;
+> DROP TABLE IF EXISTS DDL.Constituicao_Menu_Bebidas;
+> DROP TABLE IF EXISTS DDL.Constituicao_Menu_Pratos;
+> DROP TABLE IF EXISTS DDL.Prato;
+> DROP TABLE IF EXISTS DDL.Tipo_Prato;
+> DROP TABLE IF EXISTS DDL.Bebida;
+> DROP TABLE IF EXISTS DDL.Tipo_Bebida;
+> DROP TABLE IF EXISTS DDL.Lote;
+> DROP TABLE IF EXISTS DDL.Ingrediente;
+> DROP TABLE IF EXISTS DDL.Subtipo_Ingrediente;
+> DROP TABLE IF EXISTS DDL.Tipo_Ingrediente;
+> DROP TABLE IF EXISTS DDL.Servico_Evento;
+> DROP TABLE IF EXISTS DDL.Servico_Externo;
+> DROP TABLE IF EXISTS DDL.Fornecedor;
+> DROP TABLE IF EXISTS DDL.Servico_Interno;
+> DROP TABLE IF EXISTS DDL.Servico;
+> DROP TABLE IF EXISTS DDL.Trabalha_Em;
+> DROP TABLE IF EXISTS DDL.Empregado;
+> DROP TABLE IF EXISTS DDL.Funcao_Empregado;
+> DROP TABLE IF EXISTS DDL.Evento;
+> DROP TABLE IF EXISTS DDL.Menu;
+> DROP TABLE IF EXISTS DDL.Tipo_Menu;
+> DROP TABLE IF EXISTS DDL.Tipo_evento;
+> DROP TABLE IF EXISTS DDL.Cliente;
+> GO
+12c64
+< CREATE TABLE Cliente (
+---
+> CREATE TABLE DDL.Cliente (
+37c89
+< CREATE TABLE Tipo_evento (
+---
+> CREATE TABLE DDL.Tipo_evento (
+50c102
+< CREATE TABLE Tipo_Menu (
+---
+> CREATE TABLE DDL.Tipo_Menu (
+63c115
+< CREATE TABLE Menu (
+---
+> CREATE TABLE DDL.Menu (
+65,66c117,118
+<     id_tipo_menu    INT,
+<     descricao       VARCHAR(150),
+---
+>     id_tipo_menu    INT NOT NULL,
+>     descricao       VARCHAR(150) NOT NULL,
+70c122
+<         REFERENCES Tipo_Menu(id_tipo_menu),    
+---
+>         REFERENCES DDL.Tipo_Menu(id_tipo_menu),    
+77,78c129,130
+< CREATE TABLE Evento (
+<     id_evento       INT IDENTITY PRIMARY KEY,
+---
+> CREATE TABLE DDL.Evento (
+>     id_evento       INT IDENTITY PRIMARY KEY NONCLUSTERED,
+93c145
+<         REFERENCES Cliente(id_cliente),
+---
+>         REFERENCES DDL.Cliente(id_cliente),
+96c148
+<         REFERENCES Menu(id_menu),
+---
+>         REFERENCES DDL.Menu(id_menu),
+99c151
+<         REFERENCES Tipo_evento(id_tipo_evento),
+---
+>         REFERENCES DDL.Tipo_evento(id_tipo_evento),
+117,118c169,170
+< -- Função_Empregado
+< CREATE TABLE Funcao_Empregado (
+---
+> -- Funï¿½ï¿½o_Empregado
+> CREATE TABLE DDL.Funcao_Empregado (
+120c172
+<     designacao              VARCHAR(100),
+---
+>     designacao              VARCHAR(100) NOT NULL,
+131c183
+< CREATE TABLE Empregado (
+---
+> CREATE TABLE DDL.Empregado (
+144c196
+<         REFERENCES Funcao_Empregado(id_funcao_empregado),
+---
+>         REFERENCES DDL.Funcao_Empregado(id_funcao_empregado),
+160,163c212,215
+< CREATE TABLE Trabalha_Em (
+<     id_empregado    INT,
+<     id_evento       INT,
+<     duracao         INT,
+---
+> CREATE TABLE DDL.Trabalha_Em (
+>     id_empregado    INT NOT NULL,
+>     id_evento       INT NOT NULL,
+>     duracao         INT NOT NULL,
+169c221
+<         REFERENCES Empregado(id_empregado),
+---
+>         REFERENCES DDL.Empregado(id_empregado),
+172c224
+<         REFERENCES Evento(id_evento),
+---
+>         REFERENCES DDL.Evento(id_evento),
+181,182c233,234
+< -- Serviço
+< CREATE TABLE Servico (
+---
+> -- Serviï¿½o
+> CREATE TABLE DDL.Servico (
+185c237
+<     descricao       VARCHAR(150),
+---
+>     descricao       VARCHAR(150) NOT NULL,
+195,196c247,248
+< -- Serviço_Interno
+< CREATE TABLE Servico_Interno (
+---
+> -- Serviï¿½o_Interno
+> CREATE TABLE DDL.Servico_Interno (
+201c253
+< 		REFERENCES Servico(id_servico),    
+---
+> 		REFERENCES DDL.Servico(id_servico),    
+208c260
+< CREATE TABLE Fornecedor (
+---
+> CREATE TABLE DDL.Fornecedor (
+224,225c276,277
+< -- Serviço_Externo
+< CREATE TABLE Servico_Externo (
+---
+> -- Serviï¿½o_Externo
+> CREATE TABLE DDL.Servico_Externo (
+233c285
+<         REFERENCES Servico(id_servico),
+---
+>         REFERENCES DDL.Servico(id_servico),
+236c288
+<         REFERENCES Fornecedor(id_fornecedor),    
+---
+>         REFERENCES DDL.Fornecedor(id_fornecedor),    
+242,246c294,298
+< -- Serviço_Evento
+< CREATE TABLE Servico_Evento (
+< 	id_servico  INT,
+<     id_evento   INT,
+<     isdeleted INT DEFAULT 0,
+---
+> -- Serviï¿½o_Evento
+> CREATE TABLE DDL.Servico_Evento (
+> 	id_servico  INT NOT NULL,
+>     id_evento   INT NOT NULL,
+>     isdeleted   INT DEFAULT 0,
+250,251c302,303
+<     FOREIGN KEY (id_servico)    
+<         REFERENCES Servico(id_servico),
+---
+>     FOREIGN KEY (id_servico)
+>         REFERENCES DDL.Servico(id_servico),
+254c306
+<         REFERENCES Evento(id_evento),    
+---
+>         REFERENCES DDL.Evento(id_evento),    
+261c313
+< CREATE TABLE Tipo_Ingrediente (
+---
+> CREATE TABLE DDL.Tipo_Ingrediente (
+274c326
+< CREATE TABLE Subtipo_Ingrediente (
+---
+> CREATE TABLE DDL.Subtipo_Ingrediente (
+276c328
+<     id_tipo_ingrediente     INT,
+---
+>     id_tipo_ingrediente     INT NOT NULL,
+281c333
+<         REFERENCES Tipo_Ingrediente(id_tipo_ingrediente),
+---
+>         REFERENCES DDL.Tipo_Ingrediente(id_tipo_ingrediente),
+291c343
+< CREATE TABLE Ingrediente (
+---
+> CREATE TABLE DDL.Ingrediente (
+293c345
+<     id_subtipo_ingrediente      INT,
+---
+>     id_subtipo_ingrediente      INT NOT NULL,
+295,297c347
+<     data_validade               DATE,
+<     quantidade                  INT,
+<     custo                       DECIMAL(10,2),
+---
+>     data_validade               DATE,    
+299a350,351
+> 	quantidade                  INT,
+>     custo                       DECIMAL(10,2),
+303c355
+<         REFERENCES Subtipo_Ingrediente(id_subtipo_ingrediente),
+---
+>         REFERENCES DDL.Subtipo_Ingrediente(id_subtipo_ingrediente),
+306,313c358,359
+<         REFERENCES Fornecedor(id_fornecedor),
+< 
+<     CONSTRAINT CHK_Ingrediente_Quantidade
+<         CHECK (quantidade >= 0),
+< 
+<     CONSTRAINT CHK_Ingrediente_Custo
+<         CHECK (custo >= 0),    
+< 
+---
+>         REFERENCES DDL.Fornecedor(id_fornecedor),
+>     
+319c365
+< CREATE TABLE Lote (
+---
+> CREATE TABLE DDL.Lote (
+321,322c367,368
+<     id_ingrediente          INT,
+<     id_fornecedor           INT,
+---
+>     id_ingrediente          INT NOT NULL,
+>     id_fornecedor           INT NOT NULL,
+324c370
+<     quantidade_deduzida     INT,
+---
+>     quantidade_deduzida     INT DEFAULT 0,
+329c375
+<         REFERENCES Ingrediente(id_ingrediente),
+---
+>         REFERENCES DDL.Ingrediente(id_ingrediente),
+332c378
+<         REFERENCES Fornecedor(id_fornecedor),
+---
+>         REFERENCES DDL.Fornecedor(id_fornecedor),
+351c397
+< CREATE TABLE Tipo_Bebida (
+---
+> CREATE TABLE DDL.Tipo_Bebida (
+364c410
+< CREATE TABLE Bebida (
+---
+> CREATE TABLE DDL.Bebida (
+366c412
+<     id_tipo_bebida      INT,
+---
+>     id_tipo_bebida      INT NOT NULL,
+372c418
+<         REFERENCES Tipo_Bebida(id_tipo_bebida), 
+---
+>         REFERENCES DDL.Tipo_Bebida(id_tipo_bebida), 
+382c428
+< CREATE TABLE Tipo_Prato (
+---
+> CREATE TABLE DDL.Tipo_Prato (
+395c441
+< CREATE TABLE Prato (
+---
+> CREATE TABLE DDL.Prato (
+397c443
+<     id_tipo_prato   INT,
+---
+>     id_tipo_prato   INT NOT NULL,
+403c449
+<         REFERENCES Tipo_Prato(id_tipo_prato),
+---
+>         REFERENCES DDL.Tipo_Prato(id_tipo_prato),
+413c459
+< CREATE TABLE Constituicao_Menu_Pratos (
+---
+> CREATE TABLE DDL.Constituicao_Menu_Pratos (
+416c462
+<     isdeleted	INT DEFAULT 0,
+---
+>     isdeleted   INT DEFAULT 0,
+421c467
+<         REFERENCES Menu(id_menu),
+---
+>         REFERENCES DDL.Menu(id_menu),
+424c470
+<         REFERENCES Prato(id_prato),    
+---
+>         REFERENCES DDL.Prato(id_prato),    
+431c477
+< CREATE TABLE Constituicao_Menu_Bebidas (
+---
+> CREATE TABLE DDL.Constituicao_Menu_Bebidas (
+439c485
+<         REFERENCES Menu(id_menu),
+---
+>         REFERENCES DDL.Menu(id_menu),
+442c488
+<         REFERENCES Bebida(id_bebida),    
+---
+>         REFERENCES DDL.Bebida(id_bebida),    
+449c495
+< CREATE TABLE Constituicao_Prato (
+---
+> CREATE TABLE DDL.Constituicao_Prato (
+458c504
+<         REFERENCES Prato(id_prato),
+---
+>         REFERENCES DDL.Prato(id_prato),
+461c507
+<         REFERENCES Ingrediente(id_ingrediente),
+---
+>         REFERENCES DDL.Ingrediente(id_ingrediente),
+471c517
+< CREATE TABLE Constituicao_Bebida (
+---
+> CREATE TABLE DDL.Constituicao_Bebida (
+480c526
+<         REFERENCES Bebida(id_bebida),
+---
+>         REFERENCES DDL.Bebida(id_bebida),
+483c529
+<         REFERENCES Ingrediente(id_ingrediente),
+---
+>         REFERENCES DDL.Ingrediente(id_ingrediente),
+490a537,538
+> 
+> 
