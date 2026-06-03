@@ -49,7 +49,7 @@ Foram efetuadas as seguintes alterações:
 ## ER - Esquema Relacional/Relational Schema
 
 ### Versão final/Final Version
-![ER Diagram!](er.jpg "AnImage")
+![ER Diagram!](imagens/ER.png "AnImage")
 
 ### Melhorias/Improvements
 Foram efetuadas as seguintes alterações:
@@ -147,7 +147,7 @@ UPDATE DDL.Constituicao_Prato SET isdeleted = 1 WHERE id_prato = @prato_id;
 
 ### 3. Formulário de "Gestão de Menus"
 
-*Nota: Insira aqui a captura de ecrã (screenshot) da Gestão de Menus.*
+
 ![Screenshot Gestao Menus](screenshots/Gestao_Menus.png "Gestão de Menus")
 
 ```sql
