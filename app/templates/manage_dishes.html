@@ -10,7 +10,7 @@
     
     <div class="card">
       <div class="section-title">Adicionar Novo Artigo</div>
-      <form method="post" action="{{ url_for('manage_dishes') }}">
+      <form method="post" action="{{ url_for('dishes.manage_dishes') }}">
         <input type="hidden" name="id" value="{{ form.id|default('') }}" />
         <div class="grid-2">
           <div>
@@ -99,7 +99,7 @@
                     </div>
                     <div style="display:flex; gap:10px; align-items:center;">
                       <button type="button" class="button-secondary" onclick="showDishDetails('prato', {{ p.id_prato }})" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;">Ver Detalhes</button>
-                      <form method="post" action="{{ url_for('delete_prato', prato_id=p.id_prato) }}" onsubmit="return confirm('Tem a certeza?');" style="margin:0;">
+                      <form method="post" action="{{ url_for('dishes.delete_prato', prato_id=p.id_prato) }}" onsubmit="return confirm('Tem a certeza?');" style="margin:0;">
                         <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
                       </form>
                     </div>
@@ -125,7 +125,7 @@
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
                   <button type="button" class="button-secondary" onclick="showDishDetails('bebida', {{ b.id_bebida }})" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;">Ver Detalhes</button>
-                  <form method="post" action="{{ url_for('delete_bebida', bebida_id=b.id_bebida) }}" onsubmit="return confirm('Tem a certeza?');" style="margin:0;">
+                  <form method="post" action="{{ url_for('dishes.delete_bebida', bebida_id=b.id_bebida) }}" onsubmit="return confirm('Tem a certeza?');" style="margin:0;">
                     <button type="submit" class="button-secondary" style="background:#F3F4F6;color:#B91C1C;border:1px solid #FCA5A5;">Apagar</button>
                   </form>
                 </div>

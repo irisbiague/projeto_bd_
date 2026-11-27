@@ -12,13 +12,13 @@
         <div class="logo-container">
           <div class="logo">Event<span>Pro</span></div>
         </div>
-        <a href="{{ url_for('create_event') }}" class="nav-item {% if active_page == 'create_event' %}active{% endif %}">Criar Evento</a>
-        <a href="{{ url_for('events') }}" class="nav-item {% if active_page == 'events' %}active{% endif %}">Eventos Marcados</a>
-        <a href="{{ url_for('manage_menus') }}" class="nav-item {% if active_page == 'manage_menus' %}active{% endif %}">Gestão de Menus</a>
-        <a href="{{ url_for('manage_dishes') }}" class="nav-item {% if active_page == 'manage_dishes' %}active{% endif %}">Catálogo de Catering</a>
-        <a href="{{ url_for('stock') }}" class="nav-item {% if active_page == 'stock' %}active{% endif %}">Gestão de Stock</a>
+        <a href="{{ url_for('events.create_event') }}" class="nav-item {% if active_page == 'create_event' %}active{% endif %}">Criar Evento</a>
+        <a href="{{ url_for('events.events') }}" class="nav-item {% if active_page == 'events' %}active{% endif %}">Eventos Marcados</a>
+        <a href="{{ url_for('menus.manage_menus') }}" class="nav-item {% if active_page == 'manage_menus' %}active{% endif %}">Gestão de Menus</a>
+        <a href="{{ url_for('dishes.manage_dishes') }}" class="nav-item {% if active_page == 'manage_dishes' %}active{% endif %}">Catálogo de Catering</a>
+        <a href="{{ url_for('stock.stock') }}" class="nav-item {% if active_page == 'stock' %}active{% endif %}">Gestão de Stock</a>
         {% if session.get('logged_in') %}
-          <a href="{{ url_for('logout') }}" class="nav-item">Sair</a>
+          <a href="{{ url_for('auth.logout') }}" class="nav-item">Sair</a>
         {% endif %}
       </aside>
       <main class="main-content">

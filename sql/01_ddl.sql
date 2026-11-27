@@ -114,8 +114,8 @@ CREATE TABLE DDL.Tipo_Menu (
 -- Menu
 CREATE TABLE DDL.Menu (
     id_menu         INT IDENTITY PRIMARY KEY,    
-    id_tipo_menu    INT,
-    descricao       VARCHAR(150),
+    id_tipo_menu    INT NOT NULL,
+    descricao       VARCHAR(150) NOT NULL,
     isdeleted       INT DEFAULT 0,
 
     FOREIGN KEY (id_tipo_menu)
@@ -169,7 +169,7 @@ CREATE TABLE DDL.Evento (
 -- Fun��o_Empregado
 CREATE TABLE DDL.Funcao_Empregado (
     id_funcao_empregado     INT IDENTITY PRIMARY KEY,
-    designacao              VARCHAR(100),
+    designacao              VARCHAR(100) NOT NULL,
     isdeleted               INT DEFAULT 0,
 
     CONSTRAINT CHK_FuncaoEmpregado_Designacao
@@ -210,9 +210,9 @@ CREATE TABLE DDL.Empregado (
 
 -- Trabalha_Em
 CREATE TABLE DDL.Trabalha_Em (
-    id_empregado    INT,
-    id_evento       INT,
-    duracao         INT,
+    id_empregado    INT NOT NULL,
+    id_evento       INT NOT NULL,
+    duracao         INT NOT NULL,
     isdeleted       INT DEFAULT 0,
 
     PRIMARY KEY (id_empregado, id_evento),
@@ -234,7 +234,7 @@ CREATE TABLE DDL.Trabalha_Em (
 CREATE TABLE DDL.Servico (
     id_servico      INT IDENTITY PRIMARY KEY,
     custo           DECIMAL(10,2),
-    descricao       VARCHAR(150),
+    descricao       VARCHAR(150) NOT NULL,
     isdeleted       INT DEFAULT 0,
 
     CONSTRAINT CHK_Servico_Custo
@@ -293,9 +293,9 @@ CREATE TABLE DDL.Servico_Externo (
 
 -- Servi�o_Evento
 CREATE TABLE DDL.Servico_Evento (
-	id_servico  INT,
-    id_evento   INT,
-    isdeleted INT DEFAULT 0,
+	id_servico  INT NOT NULL,
+    id_evento   INT NOT NULL,
+    isdeleted   INT DEFAULT 0,
 
     PRIMARY KEY (id_servico, id_evento),
 
@@ -325,7 +325,7 @@ CREATE TABLE DDL.Tipo_Ingrediente (
 -- Subtipo_Ingrediente
 CREATE TABLE DDL.Subtipo_Ingrediente (
     id_subtipo_ingrediente  INT IDENTITY PRIMARY KEY,
-    id_tipo_ingrediente     INT,
+    id_tipo_ingrediente     INT NOT NULL,
     designacao              VARCHAR(80),
     isdeleted               INT DEFAULT 0,
 
@@ -342,7 +342,7 @@ CREATE TABLE DDL.Subtipo_Ingrediente (
 -- Ingrediente
 CREATE TABLE DDL.Ingrediente (
     id_ingrediente              INT IDENTITY PRIMARY KEY,
-    id_subtipo_ingrediente      INT,
+    id_subtipo_ingrediente      INT NOT NULL,
     id_fornecedor               INT,
     data_validade               DATE,    
     nome                        VARCHAR(100),
@@ -409,7 +409,7 @@ CREATE TABLE DDL.Tipo_Bebida (
 -- Bebida
 CREATE TABLE DDL.Bebida (
     id_bebida           INT IDENTITY PRIMARY KEY,    
-    id_tipo_bebida      INT,
+    id_tipo_bebida      INT NOT NULL,
     nome                VARCHAR(80),
     receita             TEXT,
     isdeleted           INT DEFAULT 0,
@@ -440,7 +440,7 @@ CREATE TABLE DDL.Tipo_Prato (
 -- Prato
 CREATE TABLE DDL.Prato (
     id_prato        INT IDENTITY PRIMARY KEY,    
-    id_tipo_prato   INT,
+    id_tipo_prato   INT NOT NULL,
     nome            VARCHAR(80),
     receita         TEXT,
     isdeleted       INT DEFAULT 0,
@@ -459,7 +459,7 @@ CREATE TABLE DDL.Prato (
 CREATE TABLE DDL.Constituicao_Menu_Pratos (
     id_menu     INT,
     id_prato    INT,
-    isdeleted INT DEFAULT 0,
+    isdeleted   INT DEFAULT 0,
 
     PRIMARY KEY (id_menu,id_prato),
 
@@ -534,3 +534,6 @@ CREATE TABLE DDL.Constituicao_Bebida (
     CONSTRAINT CHK_Constituicao_Bebida_IsDeleted
         CHECK (isdeleted IN (0,1))
 );
+
+
+

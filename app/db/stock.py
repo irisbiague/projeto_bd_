@@ -53,6 +53,7 @@ def save_stock_item(db, form):
         )
     )
     row = cursor.fetchone()
+    
     if not row or row[0] is None:
         db.rollback()
         return False, 'Erro interno: não foi possível criar o ingrediente.'
@@ -81,6 +82,7 @@ def update_stock_item(db, item_id, form):
         return False, 'Por favor, selecione um fornecedor.'
 
     cursor = db.execute('SELECT 1 FROM DDL.Ingrediente WHERE id_ingrediente = ?', (item_id,))
+    
     if cursor.fetchone() is None:
         return False, f'Ingrediente com ID {item_id} não existe.'
 
@@ -107,6 +109,15 @@ def update_stock_item(db, item_id, form):
 
     db.commit()
     return True, None
+
+
+def delete_stock_item(db, item_id):
+    try:
+        db.execute('UPDATE DDL.Ingrediente SET isdeleted = 1 WHERE id_ingrediente = ?', (item_id,))
+        db.commit()
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
 
 
 def add_lote_item(db, ingredient_id, fornecedor_id, preco, quantidade_deduzivel):

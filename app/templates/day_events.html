@@ -7,7 +7,7 @@
         <p class="subtitle">Lista completa dos eventos marcados para este dia.</p>
       </div>
       <div>
-        <a href="{{ url_for('events', year=year, month=month) }}" class="button-secondary">Voltar ao calendário</a>
+        <a href="{{ url_for('events.events', year=year, month=month) }}" class="button-secondary">Voltar ao calendário</a>
       </div>
     </div>
 
@@ -51,8 +51,8 @@
             </div>
             <div style="display:flex; flex-direction: column; gap:8px; align-items:flex-end;">
               <span class="event-badge" style="background:{{ tipo.corFundo }};border-color:{{ tipo.corBorda }};color:{{ tipo.corTexto }};margin-bottom: 10px;">{{ tipo.emoji }} {{ tipo.label }}</span>
-              <a href="{{ url_for('event_inventory', event_id=event.id) }}" class="button-primary" style="font-size: 13px; padding: 6px 12px;">Ver Inventário Necessário</a>
-              <a href="{{ url_for('create_event', edit_id=event.id) }}" class="button-secondary" style="font-size: 13px; padding: 6px 12px; background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;">Editar Evento</a>
+              <a href="{{ url_for('events.event_inventory', event_id=event.id) }}" class="button-primary" style="font-size: 13px; padding: 6px 12px;">Ver Inventário Necessário</a>
+              <a href="{{ url_for('events.create_event', edit_id=event.id) }}" class="button-secondary" style="font-size: 13px; padding: 6px 12px; background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;">Editar Evento</a>
             </div>
           </div>
         {% endfor %}
